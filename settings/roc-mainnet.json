@@ -1,0 +1,26 @@
+{
+  "app_mode": "RRC20",
+  "uri": "https://public-node.rsk.co",
+  "mongo": {
+    "uri": "mongodb://localhost:27017/",
+    "db": "roc_mainnet"
+  },
+  "debug": false,
+  "tasks": {
+    "scan_raw_transactions": {"interval":  10},
+    "scan_events": {"interval":  4}
+  },
+  "scan_raw_transactions": {
+    "confirm_blocks": 10,
+    "blocks_look_behind": 1000,
+    "seconds_not_in_chain_error": 600,
+    "blocks_recession": 1,
+    "from_block": 3875774,
+    "to_block": 3875776
+  },
+  "addresses": {
+    "MoC": "",
+    "MoCConnector": "",
+    "FastBtcBridge": "0x10C848e9495a32acA95F6c23C92eCA2b2bE9903A"
+  }
+}
