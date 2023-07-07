@@ -1,5 +1,5 @@
 
-from .base.main import ConnectionHelperMongoEngine
+from .base.main import ConnectionHelperMongo
 from .base.token import ERC20Token
 from .tasks_manager import TasksManager
 from .logger import log
@@ -21,7 +21,7 @@ class StableIndexerTasks(TasksManager):
         TasksManager.__init__(self)
 
         self.config = config
-        self.connection_helper = ConnectionHelperMongoEngine(config)
+        self.connection_helper = ConnectionHelperMongo(config)
 
         self.contracts_loaded = dict()
         self.contracts_addresses = dict()
@@ -60,29 +60,29 @@ class StableIndexerTasks(TasksManager):
         if self.config['app_mode'] == 'MoC':
             self.contracts_loaded["MoCConnector"] = MoCConnector(
                 self.connection_helper.connection_manager,
-                contract_address=self.config['addresses']['MoCConnector'])
+                contract_address=self.contracts_addresses['MoCConnector'])
             self.contracts_addresses['MoCConnector'] = self.contracts_loaded["MoCConnector"].address().lower()
         else:
             self.contracts_loaded["MoCConnector"] = MoCConnectorRRC20(
                 self.connection_helper.connection_manager,
-                contract_address=self.config['addresses']['MoCConnector'])
+                contract_address=self.contracts_addresses['MoCConnector'])
             self.contracts_addresses['MoCConnector'] = self.contracts_loaded["MoCConnector"].address().lower()
 
         # get address fom moc connector
-        self.contracts_addresses['MoCState'] = self.contracts_loaded["MoCConnector"].sc.mocState().call()
-        self.contracts_addresses['MoCSettlement'] = self.contracts_loaded["MoCConnector"].sc.mocSettlement().call()
-        self.contracts_addresses['MoCExchange'] = self.contracts_loaded["MoCConnector"].sc.mocExchange().call()
-        self.contracts_addresses['MoCInrate'] = self.contracts_loaded["MoCConnector"].sc.mocInrate().call()
+        self.contracts_addresses['MoCState'] = self.contracts_loaded["MoCConnector"].sc.functions.mocState().call()
+        self.contracts_addresses['MoCSettlement'] = self.contracts_loaded["MoCConnector"].sc.functions.mocSettlement().call()
+        self.contracts_addresses['MoCExchange'] = self.contracts_loaded["MoCConnector"].sc.functions.mocExchange().call()
+        self.contracts_addresses['MoCInrate'] = self.contracts_loaded["MoCConnector"].sc.functions.mocInrate().call()
 
         if self.config['app_mode'] == 'MoC':
-            self.contracts_addresses['TP'] = self.contracts_loaded["MoCConnector"].sc.docToken().call()
-            self.contracts_addresses['TC'] = self.contracts_loaded["MoCConnector"].sc.bproToken().call()
-            self.contracts_addresses['MoCBProxManager'] = self.contracts_loaded["MoCConnector"].sc.bproxManager().call()
+            self.contracts_addresses['TP'] = self.contracts_loaded["MoCConnector"].sc.functions.docToken().call()
+            self.contracts_addresses['TC'] = self.contracts_loaded["MoCConnector"].sc.functions.bproToken().call()
+            self.contracts_addresses['MoCBProxManager'] = self.contracts_loaded["MoCConnector"].sc.functions.bproxManager().call()
         else:
-            self.contracts_addresses['TP'] = self.contracts_loaded["MoCConnector"].sc.stableToken().call()
-            self.contracts_addresses['TC'] = self.contracts_loaded["MoCConnector"].sc.riskProToken().call()
-            self.contracts_addresses['MoCBProxManager'] = self.contracts_loaded["MoCConnector"].sc.riskProxManager().call()
-            self.contracts_addresses['ReserveToken'] = self.contracts_loaded["MoCConnector"].sc.reserveToken().call()
+            self.contracts_addresses['TP'] = self.contracts_loaded["MoCConnector"].sc.functions.stableToken().call()
+            self.contracts_addresses['TC'] = self.contracts_loaded["MoCConnector"].sc.functions.riskProToken().call()
+            self.contracts_addresses['MoCBProxManager'] = self.contracts_loaded["MoCConnector"].sc.functions.riskProxManager().call()
+            self.contracts_addresses['ReserveToken'] = self.contracts_loaded["MoCConnector"].sc.functions.reserveToken().call()
 
         if self.config['app_mode'] == 'MoC':
             # MoCState

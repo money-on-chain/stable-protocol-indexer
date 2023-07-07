@@ -15,12 +15,12 @@
     "blocks_look_behind": 1000,
     "seconds_not_in_chain_error": 600,
     "blocks_recession": 1,
-    "from_block": 3875774,
-    "to_block": 3875776
+    "from_block": 5435662,
+    "to_block": 5435663
   },
   "addresses": {
-    "MoC": "",
-    "MoCConnector": "",
-    "FastBtcBridge": "0x10C848e9495a32acA95F6c23C92eCA2b2bE9903A"
+    "MoC": "0xCfF3fcaeC2352C672C38d77cb1a064B7D50ce7e1",
+    "Multicall2": "0x8f344c3b2a02a801c24635f594c5652c8a2eb02a",
+    "FastBtcBridge": "0x0D5006330289336ebdF9d0AC9E0674f91b4851eA"
   }
 }

@@ -3,9 +3,9 @@ import time
 from web3 import Web3
 from web3.exceptions import TransactionNotFound
 from hexbytes import HexBytes
+from collections import OrderedDict
 
 from indexer.logger import log
-from .models import DocumentIndexer, DocumentRawTransactions, DocumentRawLog
 
 
 LOCAL_TIMEZONE = datetime.datetime.now().astimezone().tzinfo
@@ -98,54 +98,38 @@ def index_raw_tx(connection_helper, block_number, last_block_number, filter_tx=N
         log.info("[1. Scan Raw Txs] Starting to Scan RAW TX block number: [{0}] / [{1}]".format(
             block_number, last_block_number))
 
+    collection_raw_transactions = connection_helper.mongo_collection('raw_transactions')
+
     fil_txs = block_filtered_transactions(connection_helper, block_number, filter_tx=filter_tx)
     receipts = fil_txs["receipts"]
 
     if receipts:
         for tx_rcp in receipts:
+            d_tx = OrderedDict()
+            d_tx["hash"] = str(HexBytes(tx_rcp['hash']).hex())
+            d_tx["blockNumber"] = tx_rcp['blockNumber']
+            d_tx["blockHash"] = str(HexBytes(tx_rcp['blockHash']).hex())
+            d_tx["from"] = tx_rcp['from']
+            d_tx["to"] = tx_rcp['to']
+            d_tx["value"] = str(tx_rcp['value'])
+            d_tx["gas"] = tx_rcp['gas']
+            d_tx["gasPrice"] = str(tx_rcp['gasPrice'])
+            d_tx["gasUsed"] = tx_rcp['gasUsed']
+            d_tx["input"] = str(tx_rcp['input'])
+            d_tx["receipt"] = True
+            d_tx["processed"] = False
+            d_tx["gas_used"] = tx_rcp['gasUsed']
+            d_tx["confirmations"] = connection_helper.connection_manager.block_number - tx_rcp['blockNumber']
+            d_tx["timestamp"] = fil_txs["block_ts"]
+            d_tx["logs"] = tx_rcp['logs']
+            d_tx["status"] = tx_rcp['status']
+            d_tx["createdAt"] = fil_txs["block_ts"]
+            d_tx["lastUpdatedAt"] = datetime.datetime.now()
 
-            # map log field
-            map_logs = []
-            for e_log in tx_rcp['logs']:
-                map_logs.append(
-                    DocumentRawLog(
-                        logIndex=e_log['logIndex'],
-                        blockNumber=e_log['blockNumber'],
-                        blockHash=e_log['blockHash'],
-                        transactionHash=e_log['transactionHash'],
-                        transactionIndex=e_log['transactionIndex'],
-                        address=e_log['address'],
-                        data=e_log['data'],
-                        topics=e_log['topics']
-                    )
-                )
-
-            # saving to object orm document
-            DocumentRawTransactions.objects(
-                hash=str(HexBytes(tx_rcp['hash']).hex()),
-                blockNumber=tx_rcp['blockNumber']
-            ).update_one(
-                hash=str(HexBytes(tx_rcp['hash']).hex()),
-                blockNumber=tx_rcp['blockNumber'],
-                blockHash=str(HexBytes(tx_rcp['blockHash']).hex()),
-                from_=tx_rcp['from'],
-                to_=tx_rcp['to'],
-                value=str(tx_rcp['value']),
-                gas=tx_rcp['gas'],
-                gasPrice=str(tx_rcp['gasPrice']),
-                gasUsed=tx_rcp['gasUsed'],
-                input=str(tx_rcp['input']),
-                receipt=True,
-                processed=False,
-                confirmations=connection_helper.connection_manager.block_number - tx_rcp['blockNumber'],
-                timestamp=fil_txs["block_ts"],
-                logs=map_logs,
-                status=tx_rcp['status'],
-                not_found=False,
-                createdAt=fil_txs["block_ts"],
-                lastUpdatedAt=datetime.datetime.now(),
-                upsert=True
-            )
+            post_id = collection_raw_transactions.find_one_and_update(
+                {"hash": str(HexBytes(tx_rcp['hash']).hex()), "blockNumber": tx_rcp['blockNumber']},
+                {"$set": d_tx},
+                upsert=True)
 
             processed += 1
 
@@ -171,7 +155,9 @@ def scan_raw_txs(options, connection_helper, filter_contracts, task=None):
     # get last block from node compare 1 blocks older than new
     last_block = connection_helper.connection_manager.block_number - config_blocks_recession
 
-    protocol_index = DocumentIndexer.objects.order_by('-updatedAt').first()
+    collection_moc_indexer = connection_helper.mongo_collection('moc_indexer')
+    protocol_index = collection_moc_indexer.find_one(sort=[("updatedAt", -1)])
+
     last_block_indexed = 0
     if protocol_index:
         if 'last_raw_tx_block' in protocol_index:
@@ -220,15 +206,12 @@ def scan_raw_txs(options, connection_helper, filter_contracts, task=None):
         if debug_mode:
             log.info("[1. Scan Raw Txs] OK [{0}] / [{1}]".format(current_block, to_block))
 
-        DocumentIndexer.objects(type='indexer').update_one(
-            type='indexer',
-            last_raw_tx_block=current_block,
-            updatedAt=datetime.datetime.now(),
-            last_block_number=block_processed['block_number'],
-            last_block_ts=block_processed['block_ts'],
-            upsert=True
-        )
-
+        collection_moc_indexer.update_one({},
+                                          {'$set': {'last_raw_tx_block': current_block,
+                                                    'updatedAt': datetime.datetime.now(),
+                                                    'last_block_number': block_processed['block_number'],
+                                                    'last_block_ts': block_processed['block_ts']}},
+                                          upsert=True)
         processed = block_processed["processed"]
 
         # Go to next block
