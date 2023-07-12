@@ -89,7 +89,7 @@ class StableIndexerTasks(TasksManager):
             self.contracts_loaded["MoCState"] = MoCState(
                 self.connection_helper.connection_manager,
                 contract_address=self.contracts_addresses['MoCState'])
-            self.contracts_decode_events[self.contracts_addresses['MoCState']] = EventLogDecoder(
+            self.contracts_decode_events[self.contracts_addresses['MoCState'].lower()] = EventLogDecoder(
                             self.contracts_loaded['MoCState'].sc,
                             self.connection_helper.connection_manager.web3
                         )
@@ -97,7 +97,7 @@ class StableIndexerTasks(TasksManager):
             self.contracts_loaded["MoCInrate"] = MoCInrate(
                 self.connection_helper.connection_manager,
                 contract_address=self.contracts_addresses['MoCInrate'])
-            self.contracts_decode_events[self.contracts_addresses['MoCInrate']] = EventLogDecoder(
+            self.contracts_decode_events[self.contracts_addresses['MoCInrate'].lower()] = EventLogDecoder(
                 self.contracts_loaded['MoCInrate'].sc,
                 self.connection_helper.connection_manager.web3
             )
@@ -105,7 +105,7 @@ class StableIndexerTasks(TasksManager):
             self.contracts_loaded["MoCSettlement"] = MoCSettlement(
                 self.connection_helper.connection_manager,
                 contract_address=self.contracts_addresses['MoCSettlement'])
-            self.contracts_decode_events[self.contracts_addresses['MoCSettlement']] = EventLogDecoder(
+            self.contracts_decode_events[self.contracts_addresses['MoCSettlement'].lower()] = EventLogDecoder(
                 self.contracts_loaded['MoCSettlement'].sc,
                 self.connection_helper.connection_manager.web3
             )
@@ -113,7 +113,7 @@ class StableIndexerTasks(TasksManager):
             self.contracts_loaded["MoCExchange"] = MoCExchange(
                 self.connection_helper.connection_manager,
                 contract_address=self.contracts_addresses['MoCExchange'])
-            self.contracts_decode_events[self.contracts_addresses['MoCExchange']] = EventLogDecoder(
+            self.contracts_decode_events[self.contracts_addresses['MoCExchange'].lower()] = EventLogDecoder(
                 self.contracts_loaded['MoCExchange'].sc,
                 self.connection_helper.connection_manager.web3
             )
@@ -123,7 +123,7 @@ class StableIndexerTasks(TasksManager):
             self.contracts_loaded["MoCState"] = MoCStateRRC20(
                 self.connection_helper.connection_manager,
                 contract_address=self.contracts_addresses['MoCState'])
-            self.contracts_decode_events[self.contracts_addresses['MoCState']] = EventLogDecoder(
+            self.contracts_decode_events[self.contracts_addresses['MoCState'].lower()] = EventLogDecoder(
                 self.contracts_loaded['MoCState'].sc,
                 self.connection_helper.connection_manager.web3
             )
@@ -131,7 +131,7 @@ class StableIndexerTasks(TasksManager):
             self.contracts_loaded["MoCInrate"] = MoCInrateRRC20(
                 self.connection_helper.connection_manager,
                 contract_address=self.contracts_addresses['MoCInrate'])
-            self.contracts_decode_events[self.contracts_addresses['MoCInrate']] = EventLogDecoder(
+            self.contracts_decode_events[self.contracts_addresses['MoCInrate'].lower()] = EventLogDecoder(
                 self.contracts_loaded['MoCInrate'].sc,
                 self.connection_helper.connection_manager.web3
             )
@@ -139,7 +139,7 @@ class StableIndexerTasks(TasksManager):
             self.contracts_loaded["MoCSettlement"] = MoCSettlementRRC20(
                 self.connection_helper.connection_manager,
                 contract_address=self.contracts_addresses['MoCSettlement'])
-            self.contracts_decode_events[self.contracts_addresses['MoCSettlement']] = EventLogDecoder(
+            self.contracts_decode_events[self.contracts_addresses['MoCSettlement'].lower()] = EventLogDecoder(
                 self.contracts_loaded['MoCSettlement'].sc,
                 self.connection_helper.connection_manager.web3
             )
@@ -147,7 +147,7 @@ class StableIndexerTasks(TasksManager):
             self.contracts_loaded["MoCExchange"] = MoCExchangeRRC20(
                 self.connection_helper.connection_manager,
                 contract_address=self.contracts_addresses['MoCExchange'])
-            self.contracts_decode_events[self.contracts_addresses['MoCExchange']] = EventLogDecoder(
+            self.contracts_decode_events[self.contracts_addresses['MoCExchange'].lower()] = EventLogDecoder(
                 self.contracts_loaded['MoCExchange'].sc,
                 self.connection_helper.connection_manager.web3
             )
@@ -156,7 +156,7 @@ class StableIndexerTasks(TasksManager):
         self.contracts_loaded["TC"] = ERC20Token(
             self.connection_helper.connection_manager,
             contract_address=self.contracts_addresses['TC'])
-        self.contracts_decode_events[self.contracts_addresses['TC']] = EventLogDecoder(
+        self.contracts_decode_events[self.contracts_addresses['TC'].lower()] = EventLogDecoder(
             self.contracts_loaded['TC'].sc,
             self.connection_helper.connection_manager.web3
         )
@@ -164,7 +164,7 @@ class StableIndexerTasks(TasksManager):
         self.contracts_loaded["TP"] = ERC20Token(
             self.connection_helper.connection_manager,
             contract_address=self.contracts_addresses['TP'])
-        self.contracts_decode_events[self.contracts_addresses['TP']] = EventLogDecoder(
+        self.contracts_decode_events[self.contracts_addresses['TP'].lower()] = EventLogDecoder(
             self.contracts_loaded['TP'].sc,
             self.connection_helper.connection_manager.web3
         )
@@ -179,31 +179,31 @@ class StableIndexerTasks(TasksManager):
         self.max_workers = 1
 
         # 1. Scan Raw Transactions
-        if 'scan_raw_transactions' in self.config['tasks']:
-            log.info("Jobs add: 1. Scan Raw Transactions")
-            interval = self.config['tasks']['scan_raw_transactions']['interval']
-            scan_raw_txs = ScanRawTxs(self.config, self.connection_helper, self.filter_contracts_addresses)
-            self.add_task(scan_raw_txs.on_task,
-                          args=[],
-                          wait=interval,
-                          timeout=180,
-                          task_name='1. Scan Raw Transactions')
-
-        # # 2. Scan Events Txs
-        # if 'scan_events' in self.config['tasks']:
-        #     log.info("Jobs add: 2. Scan Events Transactions")
-        #     interval = self.config['tasks']['scan_events']['interval']
-        #     scan_events_txs = ScanEventsTransactions(
-        #         self.config,
-        #         self.connection_helper,
-        #         self.contracts_decode_events,
-        #         self.contracts_addresses,
-        #         self.filter_contracts_addresses)
-        #     self.add_task(scan_events_txs.on_task,
+        # if 'scan_raw_transactions' in self.config['tasks']:
+        #     log.info("Jobs add: 1. Scan Raw Transactions")
+        #     interval = self.config['tasks']['scan_raw_transactions']['interval']
+        #     scan_raw_txs = ScanRawTxs(self.config, self.connection_helper, self.filter_contracts_addresses)
+        #     self.add_task(scan_raw_txs.on_task,
         #                   args=[],
         #                   wait=interval,
         #                   timeout=180,
-        #                   task_name='2. Scan Events Transactions')
+        #                   task_name='1. Scan Raw Transactions')
+
+        # 2. Scan Events Txs
+        if 'scan_events' in self.config['tasks']:
+            log.info("Jobs add: 2. Scan Events Transactions")
+            interval = self.config['tasks']['scan_events']['interval']
+            scan_events_txs = ScanEventsTransactions(
+                self.config,
+                self.connection_helper,
+                self.contracts_decode_events,
+                self.contracts_addresses,
+                self.filter_contracts_addresses)
+            self.add_task(scan_events_txs.on_task,
+                          args=[],
+                          wait=interval,
+                          timeout=180,
+                          task_name='2. Scan Events Transactions')
 
         # Set max tasks
         self.max_tasks = len(self.tasks)

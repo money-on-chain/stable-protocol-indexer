@@ -1,18 +1,11 @@
 import time
 import datetime
+from collections import OrderedDict
 
 from .logger import log
-from .events import EventMocCABagTCMinted, \
-    EventMocCABagTCRedeemed, \
-    EventMocCABagTPMinted, \
-    EventMocCABagTPRedeemed, \
-    EventMocCABagTPSwappedForTP, \
-    EventMocCABagTPSwappedForTC, \
-    EventMocCABagTCSwappedForTP, \
-    EventMocCABagTCandTPRedeemed, \
-    EventMocCABagTCandTPMinted, \
+from .events import EventMoCExchangeRiskProMint, \
+    EventMoCExchangeRiskProRedeem,\
     EventTokenTransfer
-from .models import DocumentRawTransactions, DocumentIndexer, DocumentTransactions
 
 
 class ScanEventsTransactions:
@@ -29,95 +22,65 @@ class ScanEventsTransactions:
         self.contracts_addresses = contracts_addresses
         self.filter_contracts_addresses = filter_contracts_addresses
         self.confirm_blocks = self.options['scan_raw_transactions']['confirm_blocks']
-        self.map_events_contracts = self.map_events()
 
         # update block info
         self.last_block = connection_helper.connection_manager.block_number
         self.block_ts = connection_helper.connection_manager.block_timestamp(self.last_block)
+        self.block_info = dict(
+            last_block=self.last_block,
+            block_ts=self.block_ts,
+            confirm_blocks=self.confirm_blocks
+        )
+
+        self.map_events_contracts = self.map_events()
 
     def update_info_last_block(self):
 
-        indexer = DocumentIndexer.objects.order_by('-updatedAt').first()
+        collection_moc_indexer = self.connection_helper.mongo_collection('moc_indexer')
+        indexer = collection_moc_indexer.find_one(sort=[("updatedAt", -1)])
         if indexer:
             if 'last_block_number' in indexer:
                 self.last_block = indexer['last_block_number']
                 self.block_ts = indexer['last_block_ts']
+                self.block_info = dict(
+                    last_block=self.last_block,
+                    block_ts=self.block_ts,
+                    confirm_blocks=self.confirm_blocks
+                )
 
     def map_events(self):
 
         d_event = dict()
-        d_event[self.contracts_addresses["MocCABag"]] = {
-            "TCMinted": EventMocCABagTCMinted(
+        d_event[self.contracts_addresses["MoCExchange"].lower()] = {
+            "RiskProMint": EventMoCExchangeRiskProMint(
                 self.options,
                 self.connection_helper,
-                self.filter_contracts_addresses),
-            "TCRedeemed": EventMocCABagTCRedeemed(
+                self.filter_contracts_addresses,
+                self.block_info),
+            "RiskProRedeem": EventMoCExchangeRiskProRedeem(
                 self.options,
                 self.connection_helper,
-                self.filter_contracts_addresses),
-            "TPMinted": EventMocCABagTPMinted(
-                self.options,
-                self.connection_helper,
-                self.filter_contracts_addresses),
-            "TPRedeemed": EventMocCABagTPRedeemed(
-                self.options,
-                self.connection_helper,
-                self.filter_contracts_addresses),
-            "TPSwappedForTP": EventMocCABagTPSwappedForTP(
-                self.options,
-                self.connection_helper,
-                self.filter_contracts_addresses),
-            "TPSwappedForTC": EventMocCABagTPSwappedForTC(
-                self.options,
-                self.connection_helper,
-                self.filter_contracts_addresses),
-            "TCSwappedForTP": EventMocCABagTCSwappedForTP(
-                self.options,
-                self.connection_helper,
-                self.filter_contracts_addresses),
-            "TCandTPRedeemed": EventMocCABagTCandTPRedeemed(
-                self.options,
-                self.connection_helper,
-                self.filter_contracts_addresses),
-            "TCandTPMinted": EventMocCABagTCandTPMinted(
-                self.options,
-                self.connection_helper,
-                self.filter_contracts_addresses)
+                self.filter_contracts_addresses,
+                self.block_info),
+
         }
 
-        d_event[self.contracts_addresses["TC"]] = {
+        d_event[self.contracts_addresses["TP"].lower()] = {
             "Transfer": EventTokenTransfer(
                 self.options,
                 self.connection_helper,
-                self.filter_contracts_addresses)
+                self.filter_contracts_addresses,
+                self.block_info,
+                'STABLE')
         }
 
-        d_event[self.contracts_addresses["TP_0"]] = {
+        d_event[self.contracts_addresses["TC"].lower()] = {
             "Transfer": EventTokenTransfer(
                 self.options,
                 self.connection_helper,
-                self.filter_contracts_addresses)
-        }
-
-        d_event[self.contracts_addresses["TP_1"]] = {
-            "Transfer": EventTokenTransfer(
-                self.options,
-                self.connection_helper,
-                self.filter_contracts_addresses)
-        }
-
-        d_event[self.contracts_addresses["CA_0"]] = {
-            "Transfer": EventTokenTransfer(
-                self.options,
-                self.connection_helper,
-                self.filter_contracts_addresses)
-        }
-
-        d_event[self.contracts_addresses["CA_1"]] = {
-            "Transfer": EventTokenTransfer(
-                self.options,
-                self.connection_helper,
-                self.filter_contracts_addresses)
+                self.filter_contracts_addresses,
+                self.block_info,
+                'RISKPRO')
         }
 
         return d_event
@@ -132,7 +95,9 @@ class ScanEventsTransactions:
         parse_info['hash'] = tx_receipt['hash']
         parse_info['gas'] = tx_receipt['gas']
         parse_info['gasPrice'] = int(tx_receipt['gasPrice'])
+        parse_info['gas_price'] = int(tx_receipt['gasPrice'])
         parse_info['gasUsed'] = tx_receipt['gasUsed']
+        parse_info['gas_used'] = tx_receipt['gasUsed']
         parse_info['timestamp'] = tx_receipt['timestamp']
         parse_info['createdAt'] = tx_receipt['createdAt']
         parse_info['eventName'] = event_name
@@ -142,24 +107,53 @@ class ScanEventsTransactions:
 
     def process_logs(self, raw_tx):
 
+        log.info(raw_tx)
+
         if raw_tx["status"] == 0:
             # reverted by EVM
 
-            DocumentTransactions.objects(
-                hash=raw_tx['hash'],
-                blockNumber=raw_tx['blockNumber']
-            ).update_one(
-                hash=raw_tx['hash'],
-                blockNumber=raw_tx['blockNumber'],
-                gas=raw_tx['gas'],
-                gasPrice=str(raw_tx['gasPrice']),
-                gasUsed=raw_tx['gasUsed'],
-                confirmations=self.connection_helper.connection_manager.block_number - raw_tx['blockNumber'],
-                timestamp=raw_tx['timestamp'],
-                createdAt=raw_tx["createdAt"],
-                lastUpdatedAt=datetime.datetime.now(),
-                upsert=True
-            )
+            collection_tx = self.connection_helper.mongo_collection('Transaction')
+
+            d_tx = OrderedDict()
+            d_tx["hash"] = raw_tx["hash"]
+            d_tx["blockNumber"] = raw_tx["blockNumber"]
+            d_tx["address"] = raw_tx["address"]
+            d_tx["gas"] = raw_tx["gas"]
+            d_tx["gasPrice"] = str(raw_tx["gasPrice"])
+            d_tx["confirmations"] = self.connection_helper.connection_manager.block_number - raw_tx['blockNumber']
+            d_tx["timestamp"] = raw_tx["timestamp"]
+            d_tx["createdAt"] = raw_tx["createdAt"]
+            d_tx["lastUpdatedAt"] = datetime.datetime.now()
+
+            post_id = collection_tx.find_one_and_update(
+                {"transactionHash": raw_tx['hash'],
+                 "address": raw_tx["address"],
+                 "event": d_tx["event"]},
+                {"$set": d_tx},
+                upsert=True)
+            d_tx['post_id'] = post_id
+
+            log.info("Tx (REVERT) {0} From: [{1}] Amount: {2} Tx Hash: {3}".format(
+                d_tx["event"],
+                d_tx["address"],
+                d_tx["amount"],
+                raw_tx['hash'],))
+
+            # DocumentTransactions.objects(
+            #     hash=raw_tx['hash'],
+            #     blockNumber=raw_tx['blockNumber']
+            # ).update_one(
+            #     hash=raw_tx['hash'],
+            #     blockNumber=raw_tx['blockNumber'],
+            #     gas=raw_tx['gas'],
+            #     gasPrice=str(raw_tx['gasPrice']),
+            #     gasUsed=raw_tx['gasUsed'],
+            #     confirmations=self.connection_helper.connection_manager.block_number - raw_tx['blockNumber'],
+            #     timestamp=raw_tx['timestamp'],
+            #     createdAt=raw_tx["createdAt"],
+            #     lastUpdatedAt=datetime.datetime.now(),
+            #     upsert=True
+            # )
             # end
             return
 
@@ -186,25 +180,31 @@ class ScanEventsTransactions:
         # update block information
         self.update_info_last_block()
 
-        raw_txs = DocumentRawTransactions.objects(processed=False, not_found=False).order_by('blockNumber') #transactionIndex
+        #raw_txs = DocumentRawTransactions.objects(processed=False, not_found=False).order_by('blockNumber') #transactionIndex
+        collection_raw_transactions = self.connection_helper.mongo_collection('raw_transactions')
+        raw_txs = collection_raw_transactions.find({"processed": False}, sort=[("blockNumber", 1)])
 
         count = 0
         if raw_txs:
             for raw_tx in raw_txs:
-
                 # update block information
                 self.update_info_last_block()
 
                 count += 1
                 self.process_logs(raw_tx)
 
-                DocumentRawTransactions.objects(
-                    hash=raw_tx["hash"],
-                    blockNumber=raw_tx["blockNumber"]
-                ).update_one(
-                    processed=True,
-                    upsert=False
-                )
+                # DocumentRawTransactions.objects(
+                #     hash=raw_tx["hash"],
+                #     blockNumber=raw_tx["blockNumber"]
+                # ).update_one(
+                #     processed=True,
+                #     upsert=False
+                # )
+
+                collection_raw_transactions.find_one_and_update(
+                    {"hash": raw_tx["hash"], "blockNumber": raw_tx["blockNumber"]},
+                    {"$set": {"processed": True}},
+                    upsert=False)
 
         duration = time.time() - start_time
         log.info("[2. Scan Events Txs] Processed: [{0}] Done! [{1} seconds]".format(count, duration))

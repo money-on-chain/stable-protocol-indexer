@@ -15,8 +15,8 @@
     "blocks_look_behind": 1000,
     "seconds_not_in_chain_error": 600,
     "blocks_recession": 1,
-    "from_block": 5435662,
-    "to_block": 5435663
+    "from_block": 5419404,
+    "to_block": 5419405
   },
   "addresses": {
     "MoC": "0xCfF3fcaeC2352C672C38d77cb1a064B7D50ce7e1",
