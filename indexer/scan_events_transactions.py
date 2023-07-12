@@ -5,7 +5,12 @@ from collections import OrderedDict
 from .logger import log
 from .events import EventMoCExchangeRiskProMint, \
     EventMoCExchangeRiskProRedeem,\
-    EventTokenTransfer
+    EventTokenTransfer, \
+    EventMoCExchangeRiskProxMint, \
+    EventMoCExchangeRiskProxRedeem, \
+    EventMoCExchangeStableTokenMint, \
+    EventMoCExchangeStableTokenRedeem, \
+    EventMoCExchangeFreeStableTokenRedeem
 
 
 class ScanEventsTransactions:
@@ -62,6 +67,31 @@ class ScanEventsTransactions:
                 self.connection_helper,
                 self.filter_contracts_addresses,
                 self.block_info),
+            "RiskProxMint": EventMoCExchangeRiskProxMint(
+                self.options,
+                self.connection_helper,
+                self.filter_contracts_addresses,
+                self.block_info),
+            "RiskProxRedeem": EventMoCExchangeRiskProxRedeem(
+                self.options,
+                self.connection_helper,
+                self.filter_contracts_addresses,
+                self.block_info),
+            "StableTokenMint": EventMoCExchangeStableTokenMint(
+                self.options,
+                self.connection_helper,
+                self.filter_contracts_addresses,
+                self.block_info),
+            "StableTokenRedeem": EventMoCExchangeStableTokenRedeem(
+                self.options,
+                self.connection_helper,
+                self.filter_contracts_addresses,
+                self.block_info),
+            "FreeStableTokenRedeem": EventMoCExchangeFreeStableTokenRedeem(
+                self.options,
+                self.connection_helper,
+                self.filter_contracts_addresses,
+                self.block_info),
 
         }
 
@@ -82,6 +112,16 @@ class ScanEventsTransactions:
                 self.block_info,
                 'RISKPRO')
         }
+
+        if self.options['app_mode'] == "RRC20":
+            d_event[self.contracts_addresses["ReserveToken"].lower()] = {
+                "Transfer": EventTokenTransfer(
+                    self.options,
+                    self.connection_helper,
+                    self.filter_contracts_addresses,
+                    self.block_info,
+                    'RESERVE')
+            }
 
         return d_event
 
@@ -139,22 +179,6 @@ class ScanEventsTransactions:
                 d_tx["amount"],
                 raw_tx['hash'],))
 
-            # DocumentTransactions.objects(
-            #     hash=raw_tx['hash'],
-            #     blockNumber=raw_tx['blockNumber']
-            # ).update_one(
-            #     hash=raw_tx['hash'],
-            #     blockNumber=raw_tx['blockNumber'],
-            #     gas=raw_tx['gas'],
-            #     gasPrice=str(raw_tx['gasPrice']),
-            #     gasUsed=raw_tx['gasUsed'],
-            #     confirmations=self.connection_helper.connection_manager.block_number - raw_tx['blockNumber'],
-            #     timestamp=raw_tx['timestamp'],
-            #     createdAt=raw_tx["createdAt"],
-            #     lastUpdatedAt=datetime.datetime.now(),
-            #     upsert=True
-            # )
-            # end
             return
 
         if raw_tx["logs"]:
@@ -180,7 +204,6 @@ class ScanEventsTransactions:
         # update block information
         self.update_info_last_block()
 
-        #raw_txs = DocumentRawTransactions.objects(processed=False, not_found=False).order_by('blockNumber') #transactionIndex
         collection_raw_transactions = self.connection_helper.mongo_collection('raw_transactions')
         raw_txs = collection_raw_transactions.find({"processed": False}, sort=[("blockNumber", 1)])
 
@@ -192,14 +215,6 @@ class ScanEventsTransactions:
 
                 count += 1
                 self.process_logs(raw_tx)
-
-                # DocumentRawTransactions.objects(
-                #     hash=raw_tx["hash"],
-                #     blockNumber=raw_tx["blockNumber"]
-                # ).update_one(
-                #     processed=True,
-                #     upsert=False
-                # )
 
                 collection_raw_transactions.find_one_and_update(
                     {"hash": raw_tx["hash"], "blockNumber": raw_tx["blockNumber"]},

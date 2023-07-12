@@ -151,6 +151,17 @@ class StableIndexerTasks(TasksManager):
                 self.contracts_loaded['MoCExchange'].sc,
                 self.connection_helper.connection_manager.web3
             )
+            # RESERVE TOKEN
+            self.contracts_loaded["ReserveToken"] = ERC20Token(
+                self.connection_helper.connection_manager,
+                contract_address=self.contracts_addresses['ReserveToken'])
+            self.contracts_decode_events[self.contracts_addresses['ReserveToken'].lower()] = EventLogDecoder(
+                self.contracts_loaded['ReserveToken'].sc,
+                self.connection_helper.connection_manager.web3
+            )
+
+        # Getting MoC token (aka Govern Token)
+        self.contracts_addresses['TG'] = self.contracts_loaded["MoCState"].sc.functions.getMoCToken().call()
 
         # Token TC
         self.contracts_loaded["TC"] = ERC20Token(
@@ -166,6 +177,14 @@ class StableIndexerTasks(TasksManager):
             contract_address=self.contracts_addresses['TP'])
         self.contracts_decode_events[self.contracts_addresses['TP'].lower()] = EventLogDecoder(
             self.contracts_loaded['TP'].sc,
+            self.connection_helper.connection_manager.web3
+        )
+        # Token TG
+        self.contracts_loaded["TG"] = ERC20Token(
+            self.connection_helper.connection_manager,
+            contract_address=self.contracts_addresses['TG'])
+        self.contracts_decode_events[self.contracts_addresses['TG'].lower()] = EventLogDecoder(
+            self.contracts_loaded['TG'].sc,
             self.connection_helper.connection_manager.web3
         )
 
