@@ -332,3 +332,23 @@ class MoCExchangeRRC20(Contract):
 
         # finally load the contract
         self.load_contract()
+
+
+class FastBtcBridge(Contract):
+
+    log = logging.getLogger()
+    precision = 10 ** 18
+
+    contract_name = 'FastBtcBridge'
+    contract_abi = Contract.content_abi_file(
+        os.path.join(os.path.dirname(os.path.realpath(__file__)), 'abi/FastBtcBridge.abi'))
+
+    def __init__(self, connection_manager, contract_address=None, contract_abi=None, contract_bin=None):
+
+        super().__init__(connection_manager,
+                         contract_address=contract_address,
+                         contract_abi=contract_abi,
+                         contract_bin=contract_bin)
+
+        # finally load the contract
+        self.load_contract()

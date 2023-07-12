@@ -81,9 +81,6 @@ class EventMoCExchangeRiskProMint(BaseEvent):
         d_tx["mocCommissionValue"] = str(moc_commission)
         d_tx["mocPrice"] = str(parsed["mocPrice"])
 
-        print("DEBUG 5>>>>")
-        print(parsed_receipt)
-
         gas_fee = parsed_receipt['gas_used'] * Web3.from_wei(parsed_receipt["gas_price"], 'ether')
         # gas_fee = self.tx_receipt.gas_used * Web3.fromWei(moc_tx['gasPrice'],
         #                                               'ether')
@@ -692,5 +689,44 @@ class EventTokenTransfer(BaseEvent):
              "event": d_tx["event"]},
             {"$set": d_tx},
             upsert=True)
+
+        return parsed
+
+
+class EventFastBtcBridgeNewBitcoinTransfer(BaseEvent):
+
+    def parse_event_and_save(self, parsed_receipt, decoded_event):
+
+        parsed = self.parse_event(parsed_receipt, decoded_event)
+
+        # get collection transaction
+        collection_bridge = self.connection_helper.mongo_collection('FastBtcBridge')
+
+        tx_hash = parsed['hash']
+
+        d_tx = dict()
+        d_tx["transactionHash"] = tx_hash
+        d_tx["transactionHashLastUpdated"] = tx_hash
+        d_tx["blockNumber"] = parsed["blockNumber"]
+        d_tx["type"] = 'PEG_OUT'
+        d_tx["transferId"] = str(parsed["transferId"])
+        d_tx["btcAddress"] = parsed["btcAddress"]
+        d_tx["nonce"] = parsed["nonce"]
+        d_tx["amountSatoshi"] = str(parsed["amountSatoshi"])
+        d_tx["feeSatoshi"] = str(parsed["feeSatoshi"])
+        d_tx["rskAddress"] = parsed["rskAddress"]
+        d_tx["status"] = 0
+        d_tx["timestamp"] = parsed["timestamp"]
+        d_tx["updated"] = parsed["timestamp"]
+        d_tx["processLogs"] = True
+
+        post_id = collection_bridge.find_one_and_update(
+            {"transferId": d_tx["transferId"]},
+            {"$set": d_tx},
+            upsert=True)
+        d_tx['post_id'] = post_id
+
+        log.info("EVENT::NewBitcoinTransfer::{0}".format(d_tx["transferId"]))
+        log.info(d_tx)
 
         return parsed

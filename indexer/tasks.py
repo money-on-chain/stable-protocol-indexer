@@ -4,7 +4,8 @@ from .base.token import ERC20Token
 from .tasks_manager import TasksManager
 from .logger import log
 from .contracts import Multicall2, MoC, MoCConnector, MoCState, MoCInrate, MoCSettlement, MoCExchange, \
-    MoCRRC20, MoCConnectorRRC20, MoCStateRRC20, MoCInrateRRC20, MoCSettlementRRC20, MoCExchangeRRC20
+    MoCRRC20, MoCConnectorRRC20, MoCStateRRC20, MoCInrateRRC20, MoCSettlementRRC20, MoCExchangeRRC20, \
+    FastBtcBridge
 from .scan_raw_transactions import ScanRawTxs
 from .scan_events_transactions import ScanEventsTransactions
 from .base.events import EventLogDecoder
@@ -185,6 +186,15 @@ class StableIndexerTasks(TasksManager):
             contract_address=self.contracts_addresses['TG'])
         self.contracts_decode_events[self.contracts_addresses['TG'].lower()] = EventLogDecoder(
             self.contracts_loaded['TG'].sc,
+            self.connection_helper.connection_manager.web3
+        )
+
+        # FastBTCBridge
+        self.contracts_loaded["FastBtcBridge"] = FastBtcBridge(
+            self.connection_helper.connection_manager,
+            contract_address=self.config['addresses']['FastBtcBridge'])
+        self.contracts_decode_events[self.contracts_addresses['FastBtcBridge'].lower()] = EventLogDecoder(
+            self.contracts_loaded['FastBtcBridge'].sc,
             self.connection_helper.connection_manager.web3
         )
 

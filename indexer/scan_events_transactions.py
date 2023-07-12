@@ -10,7 +10,8 @@ from .events import EventMoCExchangeRiskProMint, \
     EventMoCExchangeRiskProxRedeem, \
     EventMoCExchangeStableTokenMint, \
     EventMoCExchangeStableTokenRedeem, \
-    EventMoCExchangeFreeStableTokenRedeem
+    EventMoCExchangeFreeStableTokenRedeem, \
+    EventFastBtcBridgeNewBitcoinTransfer
 
 
 class ScanEventsTransactions:
@@ -113,6 +114,15 @@ class ScanEventsTransactions:
                 'RISKPRO')
         }
 
+        d_event[self.contracts_addresses["TG"].lower()] = {
+            "Transfer": EventTokenTransfer(
+                self.options,
+                self.connection_helper,
+                self.filter_contracts_addresses,
+                self.block_info,
+                'TG')
+        }
+
         if self.options['app_mode'] == "RRC20":
             d_event[self.contracts_addresses["ReserveToken"].lower()] = {
                 "Transfer": EventTokenTransfer(
@@ -122,6 +132,14 @@ class ScanEventsTransactions:
                     self.block_info,
                     'RESERVE')
             }
+
+        d_event[self.contracts_addresses["FastBtcBridge"].lower()] = {
+            "NewBitcoinTransfer": EventFastBtcBridgeNewBitcoinTransfer(
+                self.options,
+                self.connection_helper,
+                self.filter_contracts_addresses,
+                self.block_info)
+        }
 
         return d_event
 
