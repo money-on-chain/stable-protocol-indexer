@@ -219,16 +219,16 @@ class StableIndexerTasks(TasksManager):
         # set max workers
         self.max_workers = 1
 
-        # # 1. Scan Raw Transactions
-        # if 'scan_raw_transactions' in self.config['tasks']:
-        #     log.info("Jobs add: 1. Scan Raw Transactions")
-        #     interval = self.config['tasks']['scan_raw_transactions']['interval']
-        #     scan_raw_txs = ScanRawTxs(self.config, self.connection_helper, self.filter_contracts_addresses)
-        #     self.add_task(scan_raw_txs.on_task,
-        #                   args=[],
-        #                   wait=interval,
-        #                   timeout=180,
-        #                   task_name='1. Scan Raw Transactions')
+        # 1. Scan Raw Transactions
+        if 'scan_raw_transactions' in self.config['tasks']:
+            log.info("Jobs add: 1. Scan Raw Transactions")
+            interval = self.config['tasks']['scan_raw_transactions']['interval']
+            scan_raw_txs = ScanRawTxs(self.config, self.connection_helper, self.filter_contracts_addresses)
+            self.add_task(scan_raw_txs.on_task,
+                          args=[],
+                          wait=interval,
+                          timeout=180,
+                          task_name='1. Scan Raw Transactions')
 
         # # 2. Scan Events Txs
         # if 'scan_events' in self.config['tasks']:
@@ -245,17 +245,17 @@ class StableIndexerTasks(TasksManager):
         #                   wait=interval,
         #                   timeout=180,
         #                   task_name='2. Scan Events Transactions')
-
-        # 3. Scan TX Status
-        if 'scan_tx_status' in self.config['tasks']:
-            log.info("Jobs add: 3. Scan Transactions Status")
-            interval = self.config['tasks']['scan_tx_status']['interval']
-            scan_tx_status = ScanTxStatus(self.config, self.connection_helper)
-            self.add_task(scan_tx_status.on_task,
-                          args=[],
-                          wait=interval,
-                          timeout=180,
-                          task_name='3. Scan Transactions Status')
+        #
+        # # 3. Scan TX Status
+        # if 'scan_tx_status' in self.config['tasks']:
+        #     log.info("Jobs add: 3. Scan Transactions Status")
+        #     interval = self.config['tasks']['scan_tx_status']['interval']
+        #     scan_tx_status = ScanTxStatus(self.config, self.connection_helper)
+        #     self.add_task(scan_tx_status.on_task,
+        #                   args=[],
+        #                   wait=interval,
+        #                   timeout=180,
+        #                   task_name='3. Scan Transactions Status')
 
         # # 4. Scan events not processed
         # if 'scan_events_not_processed' in self.config['tasks']:

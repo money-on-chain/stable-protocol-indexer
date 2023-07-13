@@ -11,7 +11,8 @@ from .events import EventMoCExchangeRiskProMint, \
     EventMoCExchangeStableTokenMint, \
     EventMoCExchangeStableTokenRedeem, \
     EventMoCExchangeFreeStableTokenRedeem, \
-    EventFastBtcBridgeNewBitcoinTransfer
+    EventFastBtcBridgeNewBitcoinTransfer, \
+    EventFastBtcBridgeBitcoinTransferStatusUpdated
 
 
 class ScanEventsTransactions:
@@ -133,8 +134,13 @@ class ScanEventsTransactions:
                     'RESERVE')
             }
 
-        d_event[self.contracts_addresses["FastBtcBridge"].lower()] = {
+        d_event[self.options['addresses']['FastBtcBridge'].lower()] = {
             "NewBitcoinTransfer": EventFastBtcBridgeNewBitcoinTransfer(
+                self.options,
+                self.connection_helper,
+                self.filter_contracts_addresses,
+                self.block_info),
+            "BitcoinTransferStatusUpdated": EventFastBtcBridgeBitcoinTransferStatusUpdated(
                 self.options,
                 self.connection_helper,
                 self.filter_contracts_addresses,

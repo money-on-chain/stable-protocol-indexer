@@ -730,3 +730,30 @@ class EventFastBtcBridgeNewBitcoinTransfer(BaseEvent):
         log.info(d_tx)
 
         return parsed
+
+
+class EventFastBtcBridgeBitcoinTransferStatusUpdated(BaseEvent):
+
+    def parse_event_and_save(self, parsed_receipt, decoded_event):
+
+        parsed = self.parse_event(parsed_receipt, decoded_event)
+
+        # get collection transaction
+        collection_bridge = self.connection_helper.mongo_collection('FastBtcBridge')
+
+        d_tx = dict()
+        d_tx["transactionHashLastUpdated"] = parsed["transactionHash"]
+        d_tx["status"] = parsed["newStatus"]
+        d_tx["transferId"] = str(parsed["transferId"])
+        d_tx["updated"] = parsed["timestamp"]
+
+        post_id = collection_bridge.find_one_and_update(
+            {"transferId": d_tx["transferId"]},
+            {"$set": d_tx},
+            upsert=False)
+        d_tx['post_id'] = post_id
+
+        log.info("EVENT::BitcoinTransferStatusUpdated::{0}".format(d_tx["transferId"]))
+        log.info(d_tx)
+
+        return parsed
