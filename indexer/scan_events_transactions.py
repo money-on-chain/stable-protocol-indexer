@@ -159,9 +159,9 @@ class ScanEventsTransactions:
         parse_info['hash'] = tx_receipt['hash']
         parse_info['gas'] = tx_receipt['gas']
         parse_info['gasPrice'] = int(tx_receipt['gasPrice'])
-        parse_info['gas_price'] = int(tx_receipt['gasPrice'])
+        #parse_info['gas_price'] = int(tx_receipt['gasPrice'])
         parse_info['gasUsed'] = tx_receipt['gasUsed']
-        parse_info['gas_used'] = tx_receipt['gasUsed']
+        #parse_info['gas_used'] = tx_receipt['gasUsed']
         parse_info['timestamp'] = tx_receipt['timestamp']
         parse_info['createdAt'] = tx_receipt['createdAt']
         parse_info['eventName'] = event_name

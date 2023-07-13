@@ -210,7 +210,7 @@ class StableIndexerTasks(TasksManager):
             self.connection_helper.connection_manager.web3
         )
 
-        self.filter_contracts_addresses = [v for k, v in self.contracts_addresses.items()]
+        self.filter_contracts_addresses = [v.lower() for k, v in self.contracts_addresses.items()]
 
     def schedule_tasks(self):
 
@@ -219,32 +219,32 @@ class StableIndexerTasks(TasksManager):
         # set max workers
         self.max_workers = 1
 
-        # 1. Scan Raw Transactions
-        if 'scan_raw_transactions' in self.config['tasks']:
-            log.info("Jobs add: 1. Scan Raw Transactions")
-            interval = self.config['tasks']['scan_raw_transactions']['interval']
-            scan_raw_txs = ScanRawTxs(self.config, self.connection_helper, self.filter_contracts_addresses)
-            self.add_task(scan_raw_txs.on_task,
-                          args=[],
-                          wait=interval,
-                          timeout=180,
-                          task_name='1. Scan Raw Transactions')
-
-        # # 2. Scan Events Txs
-        # if 'scan_events' in self.config['tasks']:
-        #     log.info("Jobs add: 2. Scan Events Transactions")
-        #     interval = self.config['tasks']['scan_events']['interval']
-        #     scan_events_txs = ScanEventsTransactions(
-        #         self.config,
-        #         self.connection_helper,
-        #         self.contracts_decode_events,
-        #         self.contracts_addresses,
-        #         self.filter_contracts_addresses)
-        #     self.add_task(scan_events_txs.on_task,
+        # # 1. Scan Raw Transactions
+        # if 'scan_raw_transactions' in self.config['tasks']:
+        #     log.info("Jobs add: 1. Scan Raw Transactions")
+        #     interval = self.config['tasks']['scan_raw_transactions']['interval']
+        #     scan_raw_txs = ScanRawTxs(self.config, self.connection_helper, self.filter_contracts_addresses)
+        #     self.add_task(scan_raw_txs.on_task,
         #                   args=[],
         #                   wait=interval,
         #                   timeout=180,
-        #                   task_name='2. Scan Events Transactions')
+        #                   task_name='1. Scan Raw Transactions')
+
+        # 2. Scan Events Txs
+        if 'scan_events' in self.config['tasks']:
+            log.info("Jobs add: 2. Scan Events Transactions")
+            interval = self.config['tasks']['scan_events']['interval']
+            scan_events_txs = ScanEventsTransactions(
+                self.config,
+                self.connection_helper,
+                self.contracts_decode_events,
+                self.contracts_addresses,
+                self.filter_contracts_addresses)
+            self.add_task(scan_events_txs.on_task,
+                          args=[],
+                          wait=interval,
+                          timeout=180,
+                          task_name='2. Scan Events Transactions')
         #
         # # 3. Scan TX Status
         # if 'scan_tx_status' in self.config['tasks']:

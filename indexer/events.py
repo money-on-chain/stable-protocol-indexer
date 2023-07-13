@@ -81,8 +81,8 @@ class EventMoCExchangeRiskProMint(BaseEvent):
         d_tx["mocCommissionValue"] = str(moc_commission)
         d_tx["mocPrice"] = str(parsed["mocPrice"])
 
-        gas_fee = parsed_receipt['gas_used'] * Web3.from_wei(parsed_receipt["gas_price"], 'ether')
-        # gas_fee = self.tx_receipt.gas_used * Web3.fromWei(moc_tx['gasPrice'],
+        gas_fee = parsed_receipt['gasUsed'] * Web3.from_wei(parsed_receipt["gasPrice"], 'ether')
+        # gas_fee = self.tx_receipt.gasUsed * Web3.fromWei(moc_tx['gasPrice'],
         #                                               'ether')
         d_tx["gasFeeRBTC"] = str(int(gas_fee * self.precision))
         if self.options['app_mode'] != "RRC20":
@@ -97,6 +97,9 @@ class EventMoCExchangeRiskProMint(BaseEvent):
         d_tx["USDTotal"] = str(int(usd_total * self.precision))
         d_tx["processLogs"] = True
         d_tx["createdAt"] = parsed_receipt['createdAt']
+        d_tx["gas"] = parsed['gas']
+        d_tx["gasPrice"] = str(parsed['gasPrice'])
+        d_tx["gasUsed"] = parsed['gasUsed']
 
         post_id = collection_tx.find_one_and_update(
             {"transactionHash": tx_hash,
@@ -160,7 +163,7 @@ class EventMoCExchangeRiskProRedeem(BaseEvent):
         d_tx["reservePrice"] = str(parsed["reservePrice"])
         d_tx["mocCommissionValue"] = str(moc_commission)
         d_tx["mocPrice"] = str(parsed["mocPrice"])
-        gas_fee = parsed_receipt["gas_used"] * Web3.from_wei(parsed_receipt["gas_price"], 'ether')
+        gas_fee = parsed_receipt["gasUsed"] * Web3.from_wei(parsed_receipt["gasPrice"], 'ether')
         d_tx["gasFeeRBTC"] = str(int(gas_fee * self.precision))
         if self.options['app_mode'] != "RRC20":
             d_tx["gasFeeUSD"] = str(int(
@@ -176,6 +179,9 @@ class EventMoCExchangeRiskProRedeem(BaseEvent):
         d_tx["USDTotal"] = str(int(usd_total * self.precision))
         d_tx["processLogs"] = True
         d_tx["createdAt"] = parsed_receipt['createdAt']
+        d_tx["gas"] = parsed['gas']
+        d_tx["gasPrice"] = str(parsed['gasPrice'])
+        d_tx["gasUsed"] = parsed['gasUsed']
 
         post_id = collection_tx.find_one_and_update(
             {"transactionHash": tx_hash,
@@ -244,7 +250,7 @@ class EventMoCExchangeRiskProxMint(BaseEvent):
         d_tx["reservePrice"] = str(parsed["reservePrice"])
         d_tx["mocCommissionValue"] = str(moc_commission)
         d_tx["mocPrice"] = str(parsed["mocPrice"])
-        gas_fee = parsed["gas_used"] * Web3.from_wei(parsed["gas_price"], 'ether')
+        gas_fee = parsed["gasUsed"] * Web3.from_wei(parsed["gasPrice"], 'ether')
         d_tx["gasFeeRBTC"] = str(int(gas_fee * self.precision))
         if self.options['app_mode'] != "RRC20":
             d_tx["gasFeeUSD"] = str(int(
@@ -258,6 +264,9 @@ class EventMoCExchangeRiskProxMint(BaseEvent):
         d_tx["USDTotal"] = str(int(usd_total * self.precision))
         d_tx["processLogs"] = True
         d_tx["createdAt"] = parsed['createdAt']
+        d_tx["gas"] = parsed['gas']
+        d_tx["gasPrice"] = str(parsed['gasPrice'])
+        d_tx["gasUsed"] = parsed['gasUsed']
 
         post_id = collection_tx.find_one_and_update(
             {"transactionHash": tx_hash,
@@ -326,7 +335,7 @@ class EventMoCExchangeRiskProxRedeem(BaseEvent):
         d_tx["reservePrice"] = str(parsed["reservePrice"])
         d_tx["mocCommissionValue"] = str(moc_commission)
         d_tx["mocPrice"] = str(parsed["mocPrice"])
-        gas_fee = parsed["gas_used"] * Web3.from_wei(parsed["gas_price"], 'ether')
+        gas_fee = parsed["gasUsed"] * Web3.from_wei(parsed["gasPrice"], 'ether')
         d_tx["gasFeeRBTC"] = str(int(gas_fee * self.precision))
         if self.options['app_mode'] != "RRC20":
             d_tx["gasFeeUSD"] = str(int(
@@ -343,6 +352,9 @@ class EventMoCExchangeRiskProxRedeem(BaseEvent):
         d_tx["USDTotal"] = str(int(usd_total * self.precision))
         d_tx["processLogs"] = True
         d_tx["createdAt"] = parsed['createdAt']
+        d_tx["gas"] = parsed['gas']
+        d_tx["gasPrice"] = str(parsed['gasPrice'])
+        d_tx["gasUsed"] = parsed['gasUsed']
 
         post_id = collection_tx.find_one_and_update(
             {"transactionHash": tx_hash,
@@ -408,7 +420,7 @@ class EventMoCExchangeStableTokenMint(BaseEvent):
         d_tx["reservePrice"] = str(parsed["reservePrice"])
         d_tx["mocCommissionValue"] = str(moc_commission)
         d_tx["mocPrice"] = str(parsed["mocPrice"])
-        gas_fee = parsed["gas_used"] * Web3.from_wei(parsed["gas_price"], 'ether')
+        gas_fee = parsed["gasUsed"] * Web3.from_wei(parsed["gasPrice"], 'ether')
         d_tx["gasFeeRBTC"] = str(int(gas_fee * self.precision))
         if self.options['app_mode'] != "RRC20":
             d_tx["gasFeeUSD"] = str(int(
@@ -422,6 +434,9 @@ class EventMoCExchangeStableTokenMint(BaseEvent):
         d_tx["USDTotal"] = str(int(usd_total * self.precision))
         d_tx["processLogs"] = True
         d_tx["createdAt"] = parsed['createdAt']
+        d_tx["gas"] = parsed['gas']
+        d_tx["gasPrice"] = str(parsed['gasPrice'])
+        d_tx["gasUsed"] = parsed['gasUsed']
 
         post_id = collection_tx.find_one_and_update(
             {"transactionHash": tx_hash,
@@ -484,7 +499,7 @@ class EventMoCExchangeStableTokenRedeem(BaseEvent):
         d_tx["reservePrice"] = str(parsed["reservePrice"])
         d_tx["mocCommissionValue"] = str(moc_commission)
         d_tx["mocPrice"] = str(parsed["mocPrice"])
-        gas_fee = parsed["gas_used"] * Web3.from_wei(parsed["gas_price"], 'ether')
+        gas_fee = parsed["gasUsed"] * Web3.from_wei(parsed["gasPrice"], 'ether')
         # d_tx["gasFeeRBTC"] = str(int(gas_fee * self.precision))
         # if self.app_mode != "RRC20":
         #    d_tx["gasFeeUSD"] = str(int(gas_fee * Web3.fromWei(tx_event.reservePrice, 'ether') * self.precision))
@@ -498,6 +513,9 @@ class EventMoCExchangeStableTokenRedeem(BaseEvent):
         d_tx["USDTotal"] = str(int(usd_total * self.precision))
         d_tx["processLogs"] = True
         d_tx["createdAt"] = parsed['createdAt']
+        d_tx["gas"] = parsed['gas']
+        d_tx["gasPrice"] = str(parsed['gasPrice'])
+        d_tx["gasUsed"] = parsed['gasUsed']
 
         post_id = collection_tx.find_one_and_update(
             {"transactionHash": tx_hash,
@@ -565,7 +583,7 @@ class EventMoCExchangeFreeStableTokenRedeem(BaseEvent):
         d_tx["reservePrice"] = str(parsed["reservePrice"])
         d_tx["mocCommissionValue"] = str(moc_commission)
         d_tx["mocPrice"] = str(parsed["mocPrice"])
-        gas_fee = parsed["gas_used"] * Web3.from_wei(parsed["gas_price"], 'ether')
+        gas_fee = parsed["gasUsed"] * Web3.from_wei(parsed["gasPrice"], 'ether')
         d_tx["gasFeeRBTC"] = str(int(gas_fee * self.precision))
         if self.options['app_mode'] != "RRC20":
             d_tx["gasFeeUSD"] = str(int(
@@ -582,6 +600,9 @@ class EventMoCExchangeFreeStableTokenRedeem(BaseEvent):
         d_tx["USDTotal"] = str(int(usd_total * self.precision))
         d_tx["processLogs"] = True
         d_tx["createdAt"] = parsed['createdAt']
+        d_tx["gas"] = parsed['gas']
+        d_tx["gasPrice"] = str(parsed['gasPrice'])
+        d_tx["gasUsed"] = parsed['gasUsed']
 
         post_id = collection_tx.find_one_and_update(
             {"transactionHash": tx_hash,
@@ -657,7 +678,7 @@ class EventTokenTransfer(BaseEvent):
         d_tx["processLogs"] = True
         d_tx["createdAt"] = parsed_receipt['createdAt']
         d_tx["gas"] = parsed['gas']
-        d_tx["gasPrice"] = str(parsed['gas'])
+        d_tx["gasPrice"] = str(parsed['gasPrice'])
         d_tx["gasUsed"] = parsed['gasUsed']
 
         post_id = collection_tx.find_one_and_update(
@@ -682,6 +703,9 @@ class EventTokenTransfer(BaseEvent):
         d_tx["tokenInvolved"] = self.token_involved
         d_tx["processLogs"] = True
         d_tx["createdAt"] = parsed_receipt['createdAt']
+        d_tx["gas"] = parsed['gas']
+        d_tx["gasPrice"] = str(parsed['gasPrice'])
+        d_tx["gasUsed"] = parsed['gasUsed']
 
         post_id = collection_tx.find_one_and_update(
             {"transactionHash": tx_hash,
