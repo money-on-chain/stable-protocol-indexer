@@ -39,7 +39,7 @@ class ScanTxStatus:
 
     def is_confirmed_block(self, block_height, block_height_last, block_height_last_ts):
 
-        confirm_blocks = self.options['scan_moc_blocks']['confirm_blocks']
+        confirm_blocks = self.options['scan_raw_transactions']['confirm_blocks']
         if block_height_last - block_height > confirm_blocks:
             status = 'confirmed'
             confirmation_time = block_height_last_ts
@@ -55,7 +55,7 @@ class ScanTxStatus:
 
         web3 = self.connection_helper.connection_manager.web3
         collection_tx = self.connection_helper.mongo_collection('Transaction')
-        seconds_not_in_chain_error = self.options['scan_moc_blocks']['seconds_not_in_chain_error']
+        seconds_not_in_chain_error = self.options['scan_raw_transactions']['seconds_not_in_chain_error']
 
         # Get pendings tx and check for confirming, confirmed or failed
         tx_pendings = collection_tx.find({'status': 'pending'})
@@ -94,7 +94,7 @@ class ScanTxStatus:
         for tx_pending in tx_pendings:
 
             try:
-                tx_receipt = web3.eth.getTransactionReceipt(tx_pending['transactionHash'])
+                tx_receipt = web3.eth.get_transaction_receipt(tx_pending['transactionHash'])
             except TransactionNotFound:
                 tx_receipt = None
 
@@ -103,7 +103,7 @@ class ScanTxStatus:
                 if tx_receipt['status'] == 1:
                     d_tx_up['status'], d_tx_up['confirmationTime'], d_tx_up['confirmingPercent'] = \
                         self.is_confirmed_block(
-                            tx_receipt.block_number,
+                            tx_receipt['blockNumber'],
                             block_height,
                             block_height_ts)
                     # if d_tx_up['status'] == 'confirming':

@@ -242,6 +242,55 @@ class ScanEventsTransactions:
         duration = time.time() - start_time
         log.info("[2. Scan Events Txs] Processed: [{0}] Done! [{1} seconds]".format(count, duration))
 
+    def scan_events_not_processed_txs(self, task=None):
+        """ Trying to reindex when there is a problem with events"""
+
+        start_time = time.time()
+
+        collection_transactions = self.connection_helper.mongo_collection('Transaction')
+
+        collection_raw_transactions = self.connection_helper.mongo_collection('raw_transactions')
+
+        collection_moc_indexer = self.connection_helper.mongo_collection('moc_indexer')
+        moc_index = collection_moc_indexer.find_one(sort=[("updatedAt", -1)])
+
+        # we need to query tx with processLogs=None and in the last 24hs
+        only_last_tx = datetime.datetime.now() - datetime.timedelta(minutes=1440)
+        txs = collection_transactions.find({
+            "processLogs": None,
+            "createdAt": {"$gte": only_last_tx}}, sort=[("createdAt", 1)])
+
+        count = 0
+        if txs:
+            for tx in txs:
+                # only status confirmed and confirming
+                if tx["status"] not in ["confirmed", "confirming"]:
+                    continue
+
+                raw_tx = collection_raw_transactions.find_one({"hash": tx["transactionHash"]})
+
+                if not raw_tx:
+                    log.info("[8. Scan Blocks not processed] Not exist RAW Tx for hash: {0}".format(tx["transactionHash"]))
+                    continue
+
+                dt_older_than = moc_index["last_block_ts"] - datetime.timedelta(minutes=5)
+                if tx["createdAt"] >= dt_older_than:
+                    continue
+
+                log.info("[8. Scan Blocks not processed] Reindexing with hash: {0}".format(tx["transactionHash"]))
+
+                # update block information
+                self.update_info_last_block()
+
+                count += 1
+                self.process_logs(raw_tx)
+
+        duration = time.time() - start_time
+        log.info("[8. Scan Blocks not processed] Done! Processed: [{0}] [{1} seconds]".format(count, duration))
+
     def on_task(self, task=None):
         self.scan_events_txs(task=task)
+
+    def on_task_not_processed(self, task=None):
+        self.scan_events_not_processed_txs(task=task)
 
