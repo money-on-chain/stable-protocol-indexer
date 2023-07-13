@@ -6,12 +6,12 @@ __all__ = ["mongo_manager"]
 
 class MongoManager:
 
-    def __init__(self, uri='mongodb://localhost:27017/', db='doc_mainnet_rewards'):
+    def __init__(self, uri='mongodb://localhost:27017/', db='db_example'):
 
         self.uri = uri
         self.db = db
 
-    def set_connection(self, uri='mongodb://localhost:27017/', db='doc_mainnet_rewards'):
+    def set_connection(self, uri='mongodb://localhost:27017/', db='db_example'):
 
         self.uri = uri
         self.db = db
