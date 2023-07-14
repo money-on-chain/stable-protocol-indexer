@@ -21,7 +21,7 @@ from .scan_raw_transactions import ScanRawTxs
 from .scan_logs_transactions import ScanLogsTransactions
 from .scan_transactions_status import ScanTxStatus
 
-__VERSION__ = '4.1.0'
+__VERSION__ = '4.0.0'
 
 log.info("Starting Protocol Indexer version {0}".format(__VERSION__))
 
@@ -177,9 +177,9 @@ class StableIndexerTasks(TasksManager):
         #                   task_name='1. Scan Raw Transactions')
 
         # 2. Scan Logs Txs
-        if 'scan_events' in self.config['tasks']:
+        if 'scan_logs' in self.config['tasks']:
             log.info("Jobs add: 2. Scan Logs Transactions")
-            interval = self.config['tasks']['scan_events']['interval']
+            interval = self.config['tasks']['scan_logs']['interval']
             scan_events_txs = ScanLogsTransactions(
                 self.config,
                 self.connection_helper,
