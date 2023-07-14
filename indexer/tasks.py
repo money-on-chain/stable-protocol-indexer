@@ -191,7 +191,7 @@ class StableIndexerTasks(TasksManager):
                           wait=interval,
                           timeout=180,
                           task_name='2. Scan Logs Transactions')
-        #
+
         # # 3. Scan TX Status
         # if 'scan_tx_status' in self.config['tasks']:
         #     log.info("Jobs add: 3. Scan Transactions Status")

@@ -657,8 +657,8 @@ class EventTokenTransfer(BaseEvent):
         address_from_contract = '0x0000000000000000000000000000000000000000'
         address_not_allowed = [str.lower(address_from_contract), self.filter_contracts_addresses]
 
-        if parsed['from'] in address_not_allowed or \
-                parsed['to'] in address_not_allowed:
+        if sanitize_address(parsed['from']) in address_not_allowed or \
+                sanitize_address(parsed['to']) in address_not_allowed:
             # skip transfers to our contracts
             return parsed
 
