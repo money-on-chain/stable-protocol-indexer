@@ -14,21 +14,26 @@ from .events import EventMoCExchangeRiskProMint, \
     EventFastBtcBridgeNewBitcoinTransfer, \
     EventFastBtcBridgeBitcoinTransferStatusUpdated
 
+from .base.decoder import LogDecoder
 
-class ScanEventsTransactions:
+
+class ScanLogsTransactions:
 
     def __init__(self,
                  options,
                  connection_helper,
-                 contracts_decode_events,
+                 contracts_loaded,
                  contracts_addresses,
                  filter_contracts_addresses):
         self.options = options
         self.connection_helper = connection_helper
-        self.contracts_decode_events = contracts_decode_events
+        self.contracts_loaded = contracts_loaded
         self.contracts_addresses = contracts_addresses
         self.filter_contracts_addresses = filter_contracts_addresses
         self.confirm_blocks = self.options['scan_raw_transactions']['confirm_blocks']
+
+        # init log decoder
+        self.contracts_log_decoder = self.init_log_decoder()
 
         # update block info
         self.last_block = connection_helper.connection_manager.block_number
@@ -40,6 +45,41 @@ class ScanEventsTransactions:
         )
 
         self.map_events_contracts = self.map_events()
+
+    def init_log_decoder(self):
+
+        contracts_log_decoder = dict()
+        # contracts_log_decoder[self.contracts_addresses['MoCState'].lower()] = LogDecoder(
+        #     self.contracts_loaded['MoCState'].sc
+        # )
+        # contracts_log_decoder[self.contracts_addresses['MoCInrate'].lower()] = LogDecoder(
+        #     self.contracts_loaded['MoCInrate'].sc
+        # )
+        # contracts_log_decoder[self.contracts_addresses['MoCSettlement'].lower()] = LogDecoder(
+        #     self.contracts_loaded['MoCSettlement'].sc
+        # )
+        contracts_log_decoder[self.contracts_addresses['MoCExchange'].lower()] = LogDecoder(
+            self.contracts_loaded['MoCExchange'].sc
+        )
+
+        if self.options['app_mode'] != "RRC20":
+            contracts_log_decoder[self.contracts_addresses['ReserveToken'].lower()] = LogDecoder(
+                self.contracts_loaded['ReserveToken'].sc
+            )
+        contracts_log_decoder[self.contracts_addresses['TC'].lower()] = LogDecoder(
+            self.contracts_loaded['TC'].sc
+        )
+        contracts_log_decoder[self.contracts_addresses['TP'].lower()] = LogDecoder(
+            self.contracts_loaded['TP'].sc
+        )
+        contracts_log_decoder[self.contracts_addresses['TG'].lower()] = LogDecoder(
+            self.contracts_loaded['TG'].sc
+        )
+        contracts_log_decoder[self.options['addresses']['FastBtcBridge'].lower()] = LogDecoder(
+            self.contracts_loaded['FastBtcBridge'].sc
+        )
+
+        return contracts_log_decoder
 
     def update_info_last_block(self):
 
@@ -159,9 +199,7 @@ class ScanEventsTransactions:
         parse_info['hash'] = tx_receipt['hash']
         parse_info['gas'] = tx_receipt['gas']
         parse_info['gasPrice'] = int(tx_receipt['gasPrice'])
-        #parse_info['gas_price'] = int(tx_receipt['gasPrice'])
         parse_info['gasUsed'] = tx_receipt['gasUsed']
-        #parse_info['gas_used'] = tx_receipt['gasUsed']
         parse_info['timestamp'] = tx_receipt['timestamp']
         parse_info['createdAt'] = tx_receipt['createdAt']
         parse_info['eventName'] = event_name
@@ -208,16 +246,16 @@ class ScanEventsTransactions:
         if raw_tx["logs"]:
             for tx_log in raw_tx["logs"]:
                 log_address = str.lower(tx_log['address'])
-                if log_address in self.contracts_decode_events:
-                    decoded_event = self.contracts_decode_events[log_address].decode_log(tx_log)
+                if log_address in self.contracts_log_decoder:
+                    decoded_event = self.contracts_log_decoder[log_address].decode_log(tx_log)
                     if decoded_event['name'] in self.map_events_contracts[log_address]:
                         log_index = tx_log['logIndex']
                         parsed_receipt = self.parse_tx_receipt(raw_tx, decoded_event['name'], log_index=log_index)
-                        parsed_event = self.map_events_contracts[log_address][decoded_event['name']].parse_event_and_save(
-                            parsed_receipt,
-                            decoded_event['event']
-                        )
-                        print(parsed_event)
+                        parsed_event = self.map_events_contracts[log_address][decoded_event['name']]\
+                            .parse_event_and_save(
+                                parsed_receipt,
+                                decoded_event['data']
+                            )
                     else:
                         log.warning("Event name not recognized. Event: {0}".format(decoded_event['name']))
 

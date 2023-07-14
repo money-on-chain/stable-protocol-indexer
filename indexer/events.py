@@ -5,6 +5,10 @@ from web3 import Web3
 from .logger import log
 
 
+def sanitize_address(address):
+    return Web3.to_checksum_address(address.replace("0x000000000000000000000000", "0x"))
+
+
 class BaseEvent:
 
     name = 'Name'
@@ -18,7 +22,11 @@ class BaseEvent:
         self.block_info = block_info
 
     def parse_event(self, parsed_receipt, decoded_event):
-        return dict(**parsed_receipt, **decoded_event)
+        fields = dict()
+        for field in decoded_event:
+            fields[field['name']] = field['value']
+
+        return dict(**parsed_receipt, **fields)
 
     def status_tx(self, parse_receipt):
 
@@ -47,7 +55,7 @@ class EventMoCExchangeRiskProMint(BaseEvent):
         tx_hash = parsed['hash']
 
         d_tx = OrderedDict()
-        d_tx["address"] = parsed["account"]
+        d_tx["address"] = sanitize_address(parsed["account"])
         d_tx["blockNumber"] = parsed_receipt["blockNumber"]
         d_tx["event"] = 'RiskProMint'
         d_tx["transactionHash"] = tx_hash
@@ -136,7 +144,7 @@ class EventMoCExchangeRiskProRedeem(BaseEvent):
         d_tx["event"] = 'RiskProRedeem'
         d_tx["blockNumber"] = parsed_receipt["blockNumber"]
         d_tx["transactionHash"] = tx_hash
-        d_tx["address"] = parsed["account"]
+        d_tx["address"] = sanitize_address(parsed["account"])
         d_tx["tokenInvolved"] = 'RISKPRO'
         d_tx["userAmount"] = str(Web3.from_wei(parsed["amount"], 'ether'))
         d_tx["lastUpdatedAt"] = datetime.datetime.now()
@@ -217,7 +225,7 @@ class EventMoCExchangeRiskProxMint(BaseEvent):
         d_tx = OrderedDict()
         d_tx["transactionHash"] = tx_hash
         d_tx["blockNumber"] = parsed["blockNumber"]
-        d_tx["address"] = parsed["account"]
+        d_tx["address"] = sanitize_address(parsed["account"])
         d_tx["status"] = status
         d_tx["event"] = 'RiskProxMint'
         d_tx["tokenInvolved"] = 'RISKPROX'
@@ -302,7 +310,7 @@ class EventMoCExchangeRiskProxRedeem(BaseEvent):
         d_tx = OrderedDict()
         d_tx["transactionHash"] = tx_hash
         d_tx["blockNumber"] = parsed["blockNumber"]
-        d_tx["address"] = parsed["account"]
+        d_tx["address"] = sanitize_address(parsed["account"])
         d_tx["status"] = status
         d_tx["event"] = 'RiskProxRedeem'
         d_tx["tokenInvolved"] = 'RISKPROX'
@@ -390,7 +398,7 @@ class EventMoCExchangeStableTokenMint(BaseEvent):
         d_tx = OrderedDict()
         d_tx["transactionHash"] = tx_hash
         d_tx["blockNumber"] = parsed["blockNumber"]
-        d_tx["address"] = parsed["account"]
+        d_tx["address"] = sanitize_address(parsed["account"])
         d_tx["status"] = status
         d_tx["event"] = 'StableTokenMint'
         d_tx["tokenInvolved"] = 'STABLE'
@@ -470,7 +478,7 @@ class EventMoCExchangeStableTokenRedeem(BaseEvent):
         tx_hash = parsed['hash']
 
         d_tx = OrderedDict()
-        d_tx["address"] = parsed["account"]
+        d_tx["address"] = sanitize_address(parsed["account"])
         d_tx["blockNumber"] = parsed["blockNumber"]
         d_tx["event"] = 'StableTokenRedeem'
         d_tx["transactionHash"] = tx_hash
@@ -551,7 +559,7 @@ class EventMoCExchangeFreeStableTokenRedeem(BaseEvent):
         d_tx = OrderedDict()
         d_tx["transactionHash"] = tx_hash
         d_tx["blockNumber"] = parsed["blockNumber"]
-        d_tx["address"] = parsed["account"]
+        d_tx["address"] = sanitize_address(parsed["account"])
         d_tx["status"] = status
         d_tx["event"] = 'FreeStableTokenRedeem'
         d_tx["tokenInvolved"] = 'STABLE'
@@ -633,14 +641,14 @@ class EventTokenTransfer(BaseEvent):
 
         super().__init__(options, connection_helper, filter_contracts_addresses, block_info)
 
-    def parse_event(self, parsed_receipt, decoded_event):
-
-        # decode event to support write in mongo
-        parsed_receipt['from'] = decoded_event['from'].lower()
-        parsed_receipt['to'] = decoded_event['to'].lower()
-        parsed_receipt['value'] = str(decoded_event['value'])
-
-        return parsed_receipt
+    # def parse_event(self, parsed_receipt, decoded_event):
+    #
+    #     # decode event to support write in mongo
+    #     parsed_receipt['from'] = decoded_event['from'].lower()
+    #     parsed_receipt['to'] = decoded_event['to'].lower()
+    #     parsed_receipt['value'] = str(decoded_event['value'])
+    #
+    #     return parsed_receipt
 
     def parse_event_and_save(self, parsed_receipt, decoded_event):
 
@@ -664,7 +672,7 @@ class EventTokenTransfer(BaseEvent):
 
         # FROM
         d_tx = OrderedDict()
-        d_tx["address"] = parsed["from"]
+        d_tx["address"] = sanitize_address(parsed["from"])
         d_tx["blockNumber"] = parsed_receipt["blockNumber"]
         d_tx["event"] = 'Transfer'
         d_tx["transactionHash"] = tx_hash
@@ -672,7 +680,7 @@ class EventTokenTransfer(BaseEvent):
         d_tx["confirmationTime"] = confirmation_time
         d_tx["isPositive"] = False
         d_tx["lastUpdatedAt"] = datetime.datetime.now()
-        d_tx["otherAddress"] = parsed["to"]
+        d_tx["otherAddress"] = sanitize_address(parsed["to"])
         d_tx["status"] = status
         d_tx["tokenInvolved"] = self.token_involved
         d_tx["processLogs"] = True
@@ -690,7 +698,7 @@ class EventTokenTransfer(BaseEvent):
 
         # TO
         d_tx = OrderedDict()
-        d_tx["address"] = parsed["to"]
+        d_tx["address"] = sanitize_address(parsed["to"])
         d_tx["blockNumber"] = parsed_receipt["blockNumber"]
         d_tx["event"] = 'Transfer'
         d_tx["transactionHash"] = tx_hash
@@ -698,7 +706,7 @@ class EventTokenTransfer(BaseEvent):
         d_tx["confirmationTime"] = confirmation_time
         d_tx["isPositive"] = True
         d_tx["lastUpdatedAt"] = datetime.datetime.now()
-        d_tx["otherAddress"] = parsed["from"]
+        d_tx["otherAddress"] = sanitize_address(parsed["from"])
         d_tx["status"] = status
         d_tx["tokenInvolved"] = self.token_involved
         d_tx["processLogs"] = True
@@ -738,7 +746,7 @@ class EventFastBtcBridgeNewBitcoinTransfer(BaseEvent):
         d_tx["nonce"] = parsed["nonce"]
         d_tx["amountSatoshi"] = str(parsed["amountSatoshi"])
         d_tx["feeSatoshi"] = str(parsed["feeSatoshi"])
-        d_tx["rskAddress"] = parsed["rskAddress"]
+        d_tx["rskAddress"] = sanitize_address(parsed["rskAddress"])
         d_tx["status"] = 0
         d_tx["timestamp"] = parsed["timestamp"]
         d_tx["updated"] = parsed["timestamp"]

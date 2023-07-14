@@ -8,7 +8,7 @@ from web3._utils.normalizers import BASE_RETURN_NORMALIZERS
 from web3.contract import Contract
 
 
-class EventLogDecoder:
+class LogDecoder:
     def __init__(self, contract: Contract, web3):
         self.contract = contract
         self.web3 = web3
