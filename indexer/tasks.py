@@ -165,16 +165,16 @@ class StableIndexerTasks(TasksManager):
         # set max workers
         self.max_workers = 1
 
-        # # 1. Scan Raw Transactions
-        # if 'scan_raw_transactions' in self.config['tasks']:
-        #     log.info("Jobs add: 1. Scan Raw Transactions")
-        #     interval = self.config['tasks']['scan_raw_transactions']['interval']
-        #     scan_raw_txs = ScanRawTxs(self.config, self.connection_helper, self.filter_contracts_addresses)
-        #     self.add_task(scan_raw_txs.on_task,
-        #                   args=[],
-        #                   wait=interval,
-        #                   timeout=180,
-        #                   task_name='1. Scan Raw Transactions')
+        # 1. Scan Raw Transactions
+        if 'scan_raw_transactions' in self.config['tasks']:
+            log.info("Jobs add: 1. Scan Raw Transactions")
+            interval = self.config['tasks']['scan_raw_transactions']['interval']
+            scan_raw_txs = ScanRawTxs(self.config, self.connection_helper, self.filter_contracts_addresses)
+            self.add_task(scan_raw_txs.on_task,
+                          args=[],
+                          wait=interval,
+                          timeout=180,
+                          task_name='1. Scan Raw Transactions')
 
         # 2. Scan Logs Txs
         if 'scan_logs' in self.config['tasks']:

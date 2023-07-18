@@ -774,7 +774,7 @@ class EventFastBtcBridgeBitcoinTransferStatusUpdated(BaseEvent):
         collection_bridge = self.connection_helper.mongo_collection('FastBtcBridge')
 
         d_tx = dict()
-        d_tx["transactionHashLastUpdated"] = parsed["transactionHash"]
+        d_tx["transactionHashLastUpdated"] = parsed["hash"]
         d_tx["status"] = parsed["newStatus"]
         d_tx["transferId"] = str(parsed["transferId"])
         d_tx["updated"] = parsed["timestamp"]
