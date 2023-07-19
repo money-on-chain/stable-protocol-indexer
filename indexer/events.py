@@ -30,7 +30,7 @@ class BaseEvent:
 
     def status_tx(self, parse_receipt):
 
-        if parse_receipt["blockNumber"] - self.block_info['last_block'] > self.block_info['confirm_blocks']:
+        if self.block_info["last_block"] - parse_receipt['blockNumber'] > self.block_info['confirm_blocks']:
             status = 'confirmed'
             confirmation_time = self.block_info['block_ts']
         else:
@@ -38,6 +38,19 @@ class BaseEvent:
             confirmation_time = None
 
         return status, confirmation_time
+
+    def confirming_percent(self, parse_receipt):
+
+        if self.block_info["last_block"] - parse_receipt['blockNumber'] > self.block_info['confirm_blocks']:
+            status = 'confirmed'
+            confirmation_time = self.block_info['block_ts']
+            confirming_percent = 100
+        else:
+            status = 'confirming'
+            confirmation_time = None
+            confirming_percent = (self.block_info['last_block'] - parse_receipt["blockNumber"]) * 10
+
+        return status, confirmation_time, confirming_percent
 
 
 class EventMoCExchangeRiskProMint(BaseEvent):
@@ -47,7 +60,7 @@ class EventMoCExchangeRiskProMint(BaseEvent):
         parsed = self.parse_event(parsed_receipt, decoded_event)
 
         # status of tx
-        status, confirmation_time = self.status_tx(parsed)
+        status, confirmation_time, confirming_percent = self.confirming_percent(parsed)
 
         # get collection transaction
         collection_tx = self.connection_helper.mongo_collection('Transaction')
@@ -66,6 +79,7 @@ class EventMoCExchangeRiskProMint(BaseEvent):
         d_tx["USDAmount"] = str(int(usd_amount * self.precision))
         d_tx["amount"] = str(parsed["amount"])
         d_tx["confirmationTime"] = confirmation_time
+        d_tx['confirmingPercent'] = confirming_percent
         d_tx["isPositive"] = True
         d_tx["lastUpdatedAt"] = datetime.datetime.now()
 
@@ -133,7 +147,7 @@ class EventMoCExchangeRiskProRedeem(BaseEvent):
         parsed = self.parse_event(parsed_receipt, decoded_event)
 
         # status of tx
-        status, confirmation_time = self.status_tx(parsed)
+        status, confirmation_time, confirming_percent = self.confirming_percent(parsed)
 
         # get collection transaction
         collection_tx = self.connection_helper.mongo_collection('Transaction')
@@ -156,6 +170,7 @@ class EventMoCExchangeRiskProRedeem(BaseEvent):
         d_tx["USDAmount"] = str(int(usd_amount * self.precision))
         d_tx["amount"] = str(parsed["amount"])
         d_tx["confirmationTime"] = confirmation_time
+        d_tx['confirmingPercent'] = confirming_percent
         if "reserveTokenMarkup" in parsed:
             rbtc_commission = parsed["commission"] + parsed["reserveTokenMarkup"]
         else:
@@ -215,7 +230,7 @@ class EventMoCExchangeRiskProxMint(BaseEvent):
         parsed = self.parse_event(parsed_receipt, decoded_event)
 
         # status of tx
-        status, confirmation_time = self.status_tx(parsed)
+        status, confirmation_time, confirming_percent = self.confirming_percent(parsed)
 
         # get collection transaction
         collection_tx = self.connection_helper.mongo_collection('Transaction')
@@ -238,6 +253,7 @@ class EventMoCExchangeRiskProxMint(BaseEvent):
         d_tx["USDAmount"] = str(int(usd_amount * self.precision))
         d_tx["amount"] = str(parsed["amount"])
         d_tx["confirmationTime"] = confirmation_time
+        d_tx['confirmingPercent'] = confirming_percent
         d_tx["isPositive"] = True
         d_tx["leverage"] = str(parsed["leverage"])
         if "reserveTokenMarkup" in parsed:
@@ -300,7 +316,7 @@ class EventMoCExchangeRiskProxRedeem(BaseEvent):
         parsed = self.parse_event(parsed_receipt, decoded_event)
 
         # status of tx
-        status, confirmation_time = self.status_tx(parsed)
+        status, confirmation_time, confirming_percent = self.confirming_percent(parsed)
 
         # get collection transaction
         collection_tx = self.connection_helper.mongo_collection('Transaction')
@@ -323,6 +339,7 @@ class EventMoCExchangeRiskProxRedeem(BaseEvent):
         d_tx["USDAmount"] = str(int(usd_amount * self.precision))
         d_tx["amount"] = str(parsed["amount"])
         d_tx["confirmationTime"] = confirmation_time
+        d_tx['confirmingPercent'] = confirming_percent
         d_tx["leverage"] = str(parsed["leverage"])
         if "reserveTokenMarkup" in parsed:
             rbtc_commission = parsed["commission"] + parsed["reserveTokenMarkup"]
@@ -388,7 +405,7 @@ class EventMoCExchangeStableTokenMint(BaseEvent):
         parsed = self.parse_event(parsed_receipt, decoded_event)
 
         # status of tx
-        status, confirmation_time = self.status_tx(parsed)
+        status, confirmation_time, confirming_percent = self.confirming_percent(parsed)
 
         # get collection transaction
         collection_tx = self.connection_helper.mongo_collection('Transaction')
@@ -423,6 +440,7 @@ class EventMoCExchangeStableTokenMint(BaseEvent):
         d_tx["USDCommission"] = str(int(usd_commission * self.precision))
         d_tx["amount"] = str(parsed["amount"])
         d_tx["confirmationTime"] = confirmation_time
+        d_tx['confirmingPercent'] = confirming_percent
         d_tx["isPositive"] = True
         d_tx["rbtcCommission"] = str(rbtc_commission)
         d_tx["reservePrice"] = str(parsed["reservePrice"])
@@ -470,7 +488,7 @@ class EventMoCExchangeStableTokenRedeem(BaseEvent):
         parsed = self.parse_event(parsed_receipt, decoded_event)
 
         # status of tx
-        status, confirmation_time = self.status_tx(parsed)
+        status, confirmation_time, confirming_percent = self.confirming_percent(parsed)
 
         # get collection transaction
         collection_tx = self.connection_helper.mongo_collection('Transaction')
@@ -489,6 +507,7 @@ class EventMoCExchangeStableTokenRedeem(BaseEvent):
         d_tx["USDAmount"] = str(int(usd_amount * self.precision))
         d_tx["amount"] = str(parsed["amount"])
         d_tx["confirmationTime"] = confirmation_time
+        d_tx['confirmingPercent'] = confirming_percent
         d_tx["lastUpdatedAt"] = datetime.datetime.now()
         d_tx["status"] = status
         d_tx["tokenInvolved"] = 'STABLE'
@@ -549,7 +568,7 @@ class EventMoCExchangeFreeStableTokenRedeem(BaseEvent):
         parsed = self.parse_event(parsed_receipt, decoded_event)
 
         # status of tx
-        status, confirmation_time = self.status_tx(parsed)
+        status, confirmation_time, confirming_percent = self.confirming_percent(parsed)
 
         # get collection transaction
         collection_tx = self.connection_helper.mongo_collection('Transaction')
@@ -572,6 +591,7 @@ class EventMoCExchangeFreeStableTokenRedeem(BaseEvent):
         d_tx["USDAmount"] = str(int(usd_amount * self.precision))
         d_tx["amount"] = str(parsed["amount"])
         d_tx["confirmationTime"] = confirmation_time
+        d_tx['confirmingPercent'] = confirming_percent
         if "reserveTokenMarkup" in parsed:
             rbtc_commission = parsed["commission"] + parsed["reserveTokenMarkup"]
         else:
@@ -663,7 +683,7 @@ class EventTokenTransfer(BaseEvent):
             return parsed
 
         # status of tx
-        status, confirmation_time = self.status_tx(parsed)
+        status, confirmation_time, confirming_percent = self.confirming_percent(parsed)
 
         # get collection transaction
         collection_tx = self.connection_helper.mongo_collection('Transaction')
@@ -678,6 +698,7 @@ class EventTokenTransfer(BaseEvent):
         d_tx["transactionHash"] = tx_hash
         d_tx["amount"] = str(parsed["value"])
         d_tx["confirmationTime"] = confirmation_time
+        d_tx['confirmingPercent'] = confirming_percent
         d_tx["isPositive"] = False
         d_tx["lastUpdatedAt"] = datetime.datetime.now()
         d_tx["otherAddress"] = sanitize_address(parsed["to"])
@@ -704,6 +725,7 @@ class EventTokenTransfer(BaseEvent):
         d_tx["transactionHash"] = tx_hash
         d_tx["amount"] = str(parsed["value"])
         d_tx["confirmationTime"] = confirmation_time
+        d_tx['confirmingPercent'] = confirming_percent
         d_tx["isPositive"] = True
         d_tx["lastUpdatedAt"] = datetime.datetime.now()
         d_tx["otherAddress"] = sanitize_address(parsed["from"])
