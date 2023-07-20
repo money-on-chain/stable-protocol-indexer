@@ -57,38 +57,6 @@ class ScanTxStatus:
         collection_tx = self.connection_helper.mongo_collection('Transaction')
         seconds_not_in_chain_error = self.options['scan_tx_status']['seconds_not_in_chain_error']
 
-        # Get pendings tx and check for confirming, confirmed or failed
-        tx_pendings = collection_tx.find({'status': 'pending'})
-        for tx_pending in tx_pendings:
-
-            try:
-                #tx_receipt = chain.get_transaction(tx_pending['transactionHash'])
-                tx_receipt = web3.eth.get_transaction(Web3.to_hex(tx_pending['transactionHash']))
-            except TransactionNotFound:
-                tx_receipt = None
-
-            if tx_receipt:
-                d_tx_up = dict()
-                if tx_receipt.status == 1:
-                    d_tx_up['status'], d_tx_up['confirmationTime'], d_tx_up['confirmingPercent'] = \
-                        self.is_confirmed_block(
-                            tx_receipt.block_number,
-                            block_height,
-                            block_height_ts)
-                elif tx_receipt.status == 0:
-                    d_tx_up['status'] = 'failed'
-                    d_tx_up['confirmationTime'] = block_height_ts
-                else:
-                    continue
-
-                collection_tx.find_one_and_update(
-                    {"_id": tx_pending["_id"]},
-                    {"$set": d_tx_up})
-
-                log.info("[5. Scan Moc Status] Setting TX STATUS: {0} hash: {1}".format(
-                    d_tx_up['status'],
-                    tx_pending['transactionHash']))
-
         # Get confirming tx and check for confirming, confirmed or failed
         tx_pendings = collection_tx.find({'status': 'confirming'})
         for tx_pending in tx_pendings:
