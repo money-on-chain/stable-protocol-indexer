@@ -18,14 +18,14 @@
   },
   "scan_raw_transactions": {
     "confirm_blocks": 10,
-    "blocks_recession": 0,
+    "blocks_recession": 1,
     "from_block": 5478465,
     "to_block": 5478503,
     "max_blocks_to_process": 10
   },
   "scan_raw_transactions_confirming": {
-    "confirm_blocks": 10,
-    "blocks_recession": 0,
+    "confirm_blocks": 20,
+    "blocks_recession": 1,
     "from_block": 4654131,
     "to_block": 4654152,
     "max_blocks_to_process": 10
@@ -35,8 +35,8 @@
     "confirm_blocks": 10
   },
   "addresses": {
-    "MoC": "",
-    "MoCConnector": "",
+    "MoC": "0x2820f6d4D199B8D8838A4B26F9917754B86a0c1F",
+    "Multicall2": "0xaf7be1ef9537018feda5397d9e3bb9a1e4e27ac8",
     "FastBtcBridge": "0x10C848e9495a32acA95F6c23C92eCA2b2bE9903A"
   }
 }

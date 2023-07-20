@@ -209,8 +209,6 @@ class ScanLogsTransactions:
 
     def process_logs(self, raw_tx):
 
-        log.info(raw_tx)
-
         if raw_tx["status"] == 0:
             # reverted by EVM
 

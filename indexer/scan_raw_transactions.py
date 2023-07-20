@@ -184,7 +184,7 @@ def scan_raw_txs(options, connection_helper, filter_contracts, task=None):
     # only process a max of numer of blocks in one iteration of this task
     to_block = min(to_block, from_block + options['scan_raw_transactions']['max_blocks_to_process'])
 
-    if from_block >= to_block:
+    if from_block > to_block:
         if debug_mode:
             log.info("[1. Scan Raw Txs] Its not the time to run indexer no new blocks available!")
         return
@@ -256,7 +256,7 @@ def scan_raw_txs_confirming(options, connection_helper, filter_contracts, task=N
     # only process a max of numer of blocks in one iteration of this task
     to_block = min(to_block, from_block + options['scan_raw_transactions_confirming']['max_blocks_to_process'])
 
-    if from_block >= to_block:
+    if from_block > to_block:
         if debug_mode:
             log.info("[5. Scan Raw Txs Confirming] Its not the time to run indexer no new blocks available!")
         return

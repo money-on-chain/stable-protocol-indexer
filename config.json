@@ -1,9 +1,9 @@
 {
   "app_mode": "RRC20",
-  "uri": "https://public-node.rsk.co",
+  "uri": "https://public-node.testnet.rsk.co",
   "mongo": {
     "uri": "mongodb://localhost:27017/",
-    "db": "roc_mainnet"
+    "db": "roc_testnet"
   },
   "debug": true,
   "tasks": {
@@ -11,32 +11,32 @@
     "scan_raw_transactions_confirming": {"interval":  2},
     "scan_logs": {"interval":  5},
     "scan_logs_not_processed": {"interval":  30},
-    "scan_tx_status": {"interval":  5}
+    "scan_tx_status": {"interval":  2}
   },
   "scan_logs": {
     "confirm_blocks": 10
   },
   "scan_raw_transactions": {
     "confirm_blocks": 10,
-    "blocks_recession": 0,
-    "from_block": 5478465,
-    "to_block": 5478503,
-    "max_blocks_to_process": 10
+    "blocks_recession": 1,
+    "from_block": 4090560,
+    "to_block": 0,
+    "max_blocks_to_process": 100
   },
   "scan_raw_transactions_confirming": {
-    "confirm_blocks": 10,
-    "blocks_recession": 0,
-    "from_block": 4654131,
-    "to_block": 4654152,
-    "max_blocks_to_process": 10
+    "confirm_blocks": 20,
+    "blocks_recession": 1,
+    "from_block": 4090560,
+    "to_block": 0,
+    "max_blocks_to_process": 100
   },
   "scan_tx_status": {
     "seconds_not_in_chain_error": 600,
     "confirm_blocks": 10
   },
   "addresses": {
-    "MoC": "0xCfF3fcaeC2352C672C38d77cb1a064B7D50ce7e1",
+    "MoC": "0x7e2F245F7dc8e78576ECB13AEFc0a101E9BE1AD3",
     "Multicall2": "0x8f344c3b2a02a801c24635f594c5652c8a2eb02a",
-    "FastBtcBridge": "0x0D5006330289336ebdF9d0AC9E0674f91b4851eA"
+    "FastBtcBridge": "0x10C848e9495a32acA95F6c23C92eCA2b2bE9903A"
   }
 }
