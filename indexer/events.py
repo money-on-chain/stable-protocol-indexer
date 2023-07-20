@@ -744,6 +744,12 @@ class EventTokenTransfer(BaseEvent):
             {"$set": d_tx},
             upsert=True)
 
+        log.info("Tx {0} From: [{1}] Amount: {2} Tx Hash: {3}".format(
+            d_tx["event"],
+            d_tx["address"],
+            d_tx["amount"],
+            tx_hash))
+
         return parsed
 
 

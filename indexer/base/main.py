@@ -1,5 +1,4 @@
 from .mongo import mongo_manager
-#from .mongo_engine import mongo_engine_manager
 from .network import ConnectionManager
 
 
@@ -36,20 +35,3 @@ class ConnectionHelperMongo(ConnectionHelperBase):
     def mongo_collection(self, collection_name):
 
         return mongo_manager.get_collection(self.m_client, collection_name)
-
-
-# class ConnectionHelperMongoEngine(ConnectionHelperBase):
-#
-#     precision = 10 ** 18
-#
-#     def __init__(self, config):
-#         super().__init__(config)
-#         self.mongo_engine_connection = self.connect_mongo_engine()
-#
-#     def connect_mongo_engine(self):
-#
-#         # connect to mongo db
-#         mongo_engine_manager.set_connection(uri=self.config['mongo']['uri'], db=self.config['mongo']['db'])
-#         connection = mongo_engine_manager.connect()
-#
-#         return connection
