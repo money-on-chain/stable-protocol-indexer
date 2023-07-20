@@ -165,32 +165,32 @@ class StableIndexerTasks(TasksManager):
         # set max workers
         self.max_workers = 1
 
-        # 1. Scan Raw Transactions
-        if 'scan_raw_transactions' in self.config['tasks']:
-            log.info("Jobs add: 1. Scan Raw Transactions")
-            interval = self.config['tasks']['scan_raw_transactions']['interval']
-            scan_raw_txs = ScanRawTxs(self.config, self.connection_helper, self.filter_contracts_addresses)
-            self.add_task(scan_raw_txs.on_task,
-                          args=[],
-                          wait=interval,
-                          timeout=180,
-                          task_name='1. Scan Raw Transactions')
+        # # 1. Scan Raw Transactions
+        # if 'scan_raw_transactions' in self.config['tasks']:
+        #     log.info("Jobs add: 1. Scan Raw Transactions")
+        #     interval = self.config['tasks']['scan_raw_transactions']['interval']
+        #     scan_raw_txs = ScanRawTxs(self.config, self.connection_helper, self.filter_contracts_addresses)
+        #     self.add_task(scan_raw_txs.on_task,
+        #                   args=[],
+        #                   wait=interval,
+        #                   timeout=180,
+        #                   task_name='1. Scan Raw Transactions')
 
-        # 2. Scan Logs Txs
-        if 'scan_logs' in self.config['tasks']:
-            log.info("Jobs add: 2. Scan Logs Transactions")
-            interval = self.config['tasks']['scan_logs']['interval']
-            scan_events_txs = ScanLogsTransactions(
-                self.config,
-                self.connection_helper,
-                self.contracts_loaded,
-                self.contracts_addresses,
-                self.filter_contracts_addresses)
-            self.add_task(scan_events_txs.on_task,
-                          args=[],
-                          wait=interval,
-                          timeout=180,
-                          task_name='2. Scan Logs Transactions')
+        # # 2. Scan Logs Txs
+        # if 'scan_logs' in self.config['tasks']:
+        #     log.info("Jobs add: 2. Scan Logs Transactions")
+        #     interval = self.config['tasks']['scan_logs']['interval']
+        #     scan_events_txs = ScanLogsTransactions(
+        #         self.config,
+        #         self.connection_helper,
+        #         self.contracts_loaded,
+        #         self.contracts_addresses,
+        #         self.filter_contracts_addresses)
+        #     self.add_task(scan_events_txs.on_task,
+        #                   args=[],
+        #                   wait=interval,
+        #                   timeout=180,
+        #                   task_name='2. Scan Logs Transactions')
 
         # # 3. Scan TX Status
         # if 'scan_tx_status' in self.config['tasks']:
@@ -218,6 +218,17 @@ class StableIndexerTasks(TasksManager):
         #                   wait=interval,
         #                   timeout=180,
         #                   task_name='4. Scan events not processed')
+
+        # 5. Scan Raw Transactions Confirming
+        if 'scan_raw_transactions_confirming' in self.config['tasks']:
+            log.info("Jobs add: 5. Scan Raw Transactions Confirming")
+            interval = self.config['tasks']['scan_raw_transactions_confirming']['interval']
+            scan_raw_txs_confirming = ScanRawTxs(self.config, self.connection_helper, self.filter_contracts_addresses)
+            self.add_task(scan_raw_txs_confirming.on_task_confirming,
+                          args=[],
+                          wait=interval,
+                          timeout=180,
+                          task_name='5. Scan Raw Transactions Confirming')
 
         # Set max tasks
         self.max_tasks = len(self.tasks)

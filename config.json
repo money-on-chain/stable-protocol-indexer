@@ -5,10 +5,11 @@
     "uri": "mongodb://localhost:27017/",
     "db": "roc_mainnet"
   },
-  "debug": false,
+  "debug": true,
   "tasks": {
-    "scan_raw_transactions": {"interval":  5},
-    "scan_logs": {"interval":  4},
+    "scan_raw_transactions": {"interval":  2},
+    "scan_raw_transactions_confirming": {"interval":  2},
+    "scan_logs": {"interval":  5},
     "scan_tx_status": {"interval":  5},
     "scan_events_not_processed": {"interval":  30}
   },
@@ -16,9 +17,17 @@
     "confirm_blocks": 10,
     "blocks_look_behind": 1000,
     "seconds_not_in_chain_error": 600,
-    "blocks_recession": 1,
+    "blocks_recession": 0,
     "from_block": 4654131,
-    "to_block": 4654132
+    "to_block": 4654132,
+    "max_blocks_to_process": 100
+  },
+  "scan_raw_transactions_confirming": {
+    "confirm_blocks": 10,
+    "blocks_recession": 0,
+    "from_block": 4654131,
+    "to_block": 4654152,
+    "max_blocks_to_process": 10
   },
   "addresses": {
     "MoC": "0xCfF3fcaeC2352C672C38d77cb1a064B7D50ce7e1",

@@ -91,12 +91,15 @@ def block_filtered_transactions(
     return txs
 
 
-def index_raw_tx(connection_helper, block_number, last_block_number, filter_tx=None, debug_mode=True, processed=0):
+def index_raw_tx(
+        connection_helper,
+        block_number,
+        last_block_number,
+        filter_tx=None,
+        debug_mode=True,
+        processed=0,
+        confirm_mode=False):
     """ Receipts from blockchain to Database"""
-
-    if debug_mode:
-        log.info("[1. Scan Raw Txs] Starting to Scan RAW TX block number: [{0}] / [{1}]".format(
-            block_number, last_block_number))
 
     collection_raw_transactions = connection_helper.mongo_collection('raw_transactions')
 
@@ -105,6 +108,15 @@ def index_raw_tx(connection_helper, block_number, last_block_number, filter_tx=N
 
     if receipts:
         for tx_rcp in receipts:
+            if confirm_mode:
+                raw_tx = collection_raw_transactions.find_one({
+                    "hash": str(HexBytes(tx_rcp['hash']).hex()),
+                    "blockNumber": tx_rcp['blockNumber']
+                })
+                if raw_tx:
+                    # In confirm mode if exist skip it, not write again
+                    continue
+
             d_tx = OrderedDict()
             d_tx["hash"] = str(HexBytes(tx_rcp['hash']).hex())
             d_tx["blockNumber"] = tx_rcp['blockNumber']
@@ -221,6 +233,80 @@ def scan_raw_txs(options, connection_helper, filter_contracts, task=None):
     log.info("[1. Scan Raw Txs] Done! Processed: [{0}] in [{1} seconds]".format(processed, duration))
 
 
+def scan_raw_txs_confirming(options, connection_helper, filter_contracts, task=None):
+
+    start_time = time.time()
+
+    config_blocks_recession = options['scan_raw_transactions_confirming']['blocks_recession']
+    debug_mode = options['debug']
+    confirm_blocks = options['scan_raw_transactions_confirming']['confirm_blocks']
+
+    collection_moc_indexer = connection_helper.mongo_collection('moc_indexer')
+    protocol_index = collection_moc_indexer.find_one(sort=[("updatedAt", -1)])
+
+    last_block_indexed = 0
+    if protocol_index:
+        if 'last_raw_tx_confirming_block' in protocol_index:
+            last_block_indexed = protocol_index['last_raw_tx_confirming_block']
+
+    # get last block from node compare 1 blocks older than new
+    last_block = connection_helper.connection_manager.block_number - config_blocks_recession
+
+    from_block = options['scan_raw_transactions_confirming']['from_block']
+
+    if last_block_indexed > 0:
+        from_block = last_block_indexed + 1
+
+    to_block = last_block - confirm_blocks
+    if options['scan_raw_transactions_confirming']['to_block'] > 0:
+        to_block = options['scan_raw_transactions_confirming']['to_block']
+
+    # only process a max of numer of blocks in one iteration of this task
+    to_block = min(to_block, from_block + options['scan_raw_transactions_confirming']['max_blocks_to_process'])
+
+    if from_block >= to_block:
+        if debug_mode:
+            log.info("[5. Scan Raw Txs Confirming] Its not the time to run indexer no new blocks available!")
+        return
+
+    # start with from block
+    current_block = from_block
+
+    if debug_mode:
+        log.info("[5. Scan Raw Txs Confirming] Starting to Scan Transactions [{0} / {1}]".format(from_block, to_block))
+
+    processed = 0
+    while current_block <= to_block:
+
+        # index our contracts only
+        block_processed = index_raw_tx(
+            connection_helper,
+            current_block,
+            last_block,
+            filter_tx=filter_contracts,
+            debug_mode=debug_mode,
+            processed=processed,
+            confirm_mode=True)
+
+        if debug_mode:
+            log.info("[5. Scan Raw Txs Confirming] OK [{0}] / [{1}]".format(current_block, to_block))
+
+        collection_moc_indexer.update_one({},
+                                          {'$set': {'last_raw_tx_confirming_block': current_block}},
+                                          upsert=True)
+        processed = block_processed["processed"]
+
+        # Go to next block
+        current_block += 1
+
+    duration = time.time() - start_time
+
+    if processed > 0:
+        log.warning("[5. Scan Raw Txs Confirming] Reindexing [{0}] in [{1} seconds]".format(processed, duration))
+    else:
+        log.info("[5. Scan Raw Txs Confirming] Done! Processed: [{0}] in [{1} seconds]".format(processed, duration))
+
+
 class ScanRawTxs:
 
     def __init__(self, options, connection_helper, filter_contracts):
@@ -233,3 +319,6 @@ class ScanRawTxs:
 
     def on_task(self, task=None):
         scan_raw_txs(self.options, self.connection_helper, self.filter_contracts, task=task)
+
+    def on_task_confirming(self, task=None):
+        scan_raw_txs_confirming(self.options, self.connection_helper, self.filter_contracts, task=task)
