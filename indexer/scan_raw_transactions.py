@@ -158,14 +158,8 @@ def scan_raw_txs(options, connection_helper, filter_contracts, task=None):
     start_time = time.time()
 
     # get the block recession is a margin of problems to not get the immediate new instead
-    # 2 older blocks from new.
     config_blocks_recession = options['scan_raw_transactions']['blocks_recession']
-
-    # debug mode
     debug_mode = options['debug']
-
-    # get last block from node compare 1 blocks older than new
-    last_block = connection_helper.connection_manager.block_number - config_blocks_recession
 
     collection_moc_indexer = connection_helper.mongo_collection('moc_indexer')
     protocol_index = collection_moc_indexer.find_one(sort=[("updatedAt", -1)])
@@ -175,26 +169,24 @@ def scan_raw_txs(options, connection_helper, filter_contracts, task=None):
         if 'last_raw_tx_block' in protocol_index:
             last_block_indexed = protocol_index['last_raw_tx_block']
 
-    config_blocks_look_behind = options['scan_raw_transactions']['blocks_look_behind']
-    from_block = last_block - config_blocks_look_behind
+    # get last block from node compare 1 blocks older than new
+    last_block = connection_helper.connection_manager.block_number - config_blocks_recession
+
+    from_block = options['scan_raw_transactions']['from_block']
+
     if last_block_indexed > 0:
         from_block = last_block_indexed + 1
 
-    # Force from block to block for testing only
-    if options['scan_raw_transactions']['from_block'] > 0 and options['scan_raw_transactions']['to_block'] > 0:
-        # so force only to test purpose
-        from_block = options['scan_raw_transactions']['from_block']
-        last_block = options['scan_raw_transactions']['to_block']
+    to_block = last_block
+    if options['scan_raw_transactions']['to_block'] > 0:
+        to_block = options['scan_raw_transactions']['to_block']
 
-    if from_block >= last_block:
+    # only process a max of numer of blocks in one iteration of this task
+    to_block = min(to_block, from_block + options['scan_raw_transactions']['max_blocks_to_process'])
+
+    if from_block >= to_block:
         if debug_mode:
             log.info("[1. Scan Raw Txs] Its not the time to run indexer no new blocks available!")
-        return
-
-    to_block = last_block
-
-    if from_block > to_block:
-        log.error("[1. Scan Raw Txs] To block > from block!!??")
         return
 
     # start with from block

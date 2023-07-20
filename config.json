@@ -15,12 +15,11 @@
   },
   "scan_raw_transactions": {
     "confirm_blocks": 10,
-    "blocks_look_behind": 1000,
     "seconds_not_in_chain_error": 600,
     "blocks_recession": 0,
     "from_block": 4654131,
     "to_block": 4654132,
-    "max_blocks_to_process": 100
+    "max_blocks_to_process": 10
   },
   "scan_raw_transactions_confirming": {
     "confirm_blocks": 10,
