@@ -5,24 +5,38 @@
     "uri": "mongodb://localhost:27017/",
     "db": "roc_mainnet"
   },
-  "debug": false,
+  "debug": true,
   "tasks": {
-    "scan_raw_transactions": {"interval":  5},
-    "scan_logs": {"interval":  4},
-    "scan_tx_status": {"interval":  5},
-    "scan_events_not_processed": {"interval":  30}
+    "scan_raw_transactions": {"interval":  2},
+    "scan_raw_transactions_confirming": {"interval":  2},
+    "scan_logs": {"interval":  5},
+    "scan_logs_not_processed": {"interval":  30},
+    "scan_tx_status": {"interval":  5}
+  },
+  "scan_logs": {
+    "confirm_blocks": 10
   },
   "scan_raw_transactions": {
     "confirm_blocks": 10,
-    "blocks_look_behind": 1000,
+    "blocks_recession": 0,
+    "from_block": 5478465,
+    "to_block": 5478503,
+    "max_blocks_to_process": 10
+  },
+  "scan_raw_transactions_confirming": {
+    "confirm_blocks": 10,
+    "blocks_recession": 0,
+    "from_block": 4654131,
+    "to_block": 4654152,
+    "max_blocks_to_process": 10
+  },
+  "scan_tx_status": {
     "seconds_not_in_chain_error": 600,
-    "blocks_recession": 1,
-    "from_block": 3875774,
-    "to_block": 3875776
+    "confirm_blocks": 10
   },
   "addresses": {
-    "MoC": "",
-    "MoCConnector": "",
-    "FastBtcBridge": "0x10C848e9495a32acA95F6c23C92eCA2b2bE9903A"
+    "MoC": "0xCfF3fcaeC2352C672C38d77cb1a064B7D50ce7e1",
+    "Multicall2": "0x8f344c3b2a02a801c24635f594c5652c8a2eb02a",
+    "FastBtcBridge": "0x0D5006330289336ebdF9d0AC9E0674f91b4851eA"
   }
 }

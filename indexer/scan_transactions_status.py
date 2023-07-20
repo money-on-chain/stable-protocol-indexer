@@ -11,7 +11,7 @@ class ScanTxStatus:
     def __init__(self, options, connection_helper):
         self.options = options
         self.connection_helper = connection_helper
-        self.confirm_blocks = self.options['scan_raw_transactions']['confirm_blocks']
+        self.confirm_blocks = self.options['scan_tx_status']['confirm_blocks']
 
         # update block info
         self.last_block = connection_helper.connection_manager.block_number
@@ -39,7 +39,7 @@ class ScanTxStatus:
 
     def is_confirmed_block(self, block_height, block_height_last, block_height_last_ts):
 
-        confirm_blocks = self.options['scan_raw_transactions']['confirm_blocks']
+        confirm_blocks = self.options['scan_tx_status']['confirm_blocks']
         if block_height_last - block_height > confirm_blocks:
             status = 'confirmed'
             confirmation_time = block_height_last_ts
@@ -55,7 +55,7 @@ class ScanTxStatus:
 
         web3 = self.connection_helper.connection_manager.web3
         collection_tx = self.connection_helper.mongo_collection('Transaction')
-        seconds_not_in_chain_error = self.options['scan_raw_transactions']['seconds_not_in_chain_error']
+        seconds_not_in_chain_error = self.options['scan_tx_status']['seconds_not_in_chain_error']
 
         # Get pendings tx and check for confirming, confirmed or failed
         tx_pendings = collection_tx.find({'status': 'pending'})

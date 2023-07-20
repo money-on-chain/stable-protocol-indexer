@@ -30,7 +30,7 @@ class ScanLogsTransactions:
         self.contracts_loaded = contracts_loaded
         self.contracts_addresses = contracts_addresses
         self.filter_contracts_addresses = filter_contracts_addresses
-        self.confirm_blocks = self.options['scan_raw_transactions']['confirm_blocks']
+        self.confirm_blocks = self.options['scan_logs']['confirm_blocks']
 
         # init log decoder
         self.contracts_log_decoder = self.init_log_decoder()
