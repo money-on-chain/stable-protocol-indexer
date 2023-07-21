@@ -21,7 +21,7 @@ from .scan_raw_transactions import ScanRawTxs
 from .scan_logs_transactions import ScanLogsTransactions
 from .scan_transactions_status import ScanTxStatus
 
-__VERSION__ = '4.0.0'
+__VERSION__ = '4.0.1'
 
 log.info("Starting Protocol Indexer version {0}".format(__VERSION__))
 

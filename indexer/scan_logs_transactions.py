@@ -62,7 +62,7 @@ class ScanLogsTransactions:
             self.contracts_loaded['MoCExchange'].sc
         )
 
-        if self.options['app_mode'] != "RRC20":
+        if self.options['app_mode'] != "MoC":
             contracts_log_decoder[self.contracts_addresses['ReserveToken'].lower()] = LogDecoder(
                 self.contracts_loaded['ReserveToken'].sc
             )
