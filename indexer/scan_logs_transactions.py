@@ -218,6 +218,7 @@ class ScanLogsTransactions:
             d_tx["hash"] = raw_tx["hash"]
             d_tx["blockNumber"] = raw_tx["blockNumber"]
             d_tx["address"] = raw_tx["from"]
+            d_tx["event"] = 'ERROR'
             d_tx["gas"] = raw_tx["gas"]
             d_tx["gasPrice"] = str(raw_tx["gasPrice"])
             d_tx["confirmations"] = self.connection_helper.connection_manager.block_number - raw_tx['blockNumber']
@@ -226,17 +227,16 @@ class ScanLogsTransactions:
             d_tx["lastUpdatedAt"] = datetime.datetime.now()
 
             post_id = collection_tx.find_one_and_update(
-                {"transactionHash": raw_tx['hash'],
-                 "address": raw_tx["address"],
+                {"transactionHash": d_tx['hash'],
+                 "address": d_tx["address"],
                  "event": d_tx["event"]},
                 {"$set": d_tx},
                 upsert=True)
             d_tx['post_id'] = post_id
 
-            log.info("Tx (REVERT) {0} From: [{1}] Amount: {2} Tx Hash: {3}".format(
+            log.info("Tx (REVERT) {0} From: [{1}] Tx Hash: {2}".format(
                 d_tx["event"],
                 d_tx["address"],
-                d_tx["amount"],
                 raw_tx['hash'],))
 
             return

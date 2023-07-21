@@ -1,17 +1,14 @@
 {
-  "app_mode": "RRC20",
+  "app_mode": "MoC",
   "uri": "https://public-node.testnet.rsk.co",
   "mongo": {
     "uri": "mongodb://localhost:27017/",
-    "db": "roc_alpha_testnet"
+    "db": "moc_alpha_testnet"
   },
-  "debug": true,
+  "debug": false,
   "tasks": {
     "scan_raw_transactions": {"interval":  2},
-    "scan_raw_transactions_confirming": {"interval":  2},
-    "scan_logs": {"interval":  2},
-    "scan_logs_not_processed": {"interval":  30},
-    "scan_tx_status": {"interval":  2}
+    "scan_logs": {"interval":  2}
   },
   "scan_logs": {
     "confirm_blocks": 10
@@ -19,14 +16,14 @@
   "scan_raw_transactions": {
     "confirm_blocks": 10,
     "blocks_recession": 1,
-    "from_block": 4090500,
-    "to_block": 0,
+    "from_block": 3971540,
+    "to_block": 3971541,
     "max_blocks_to_process": 100
   },
   "scan_raw_transactions_confirming": {
-    "confirm_blocks": 10,
+    "confirm_blocks": 20,
     "blocks_recession": 1,
-    "from_block": 4090500,
+    "from_block": 3918050,
     "to_block": 0,
     "max_blocks_to_process": 100
   },
@@ -35,7 +32,7 @@
     "confirm_blocks": 10
   },
   "addresses": {
-    "MoC": "0x4512f4C1d984bbf8B7f7404EddFb1881cFA79EfD",
+    "MoC": "0x01AD6f8E884ed4DDC089fA3efC075E9ba45C9039",
     "Multicall2": "0xaf7be1ef9537018feda5397d9e3bb9a1e4e27ac8",
     "FastBtcBridge": "0x10C848e9495a32acA95F6c23C92eCA2b2bE9903A"
   }
