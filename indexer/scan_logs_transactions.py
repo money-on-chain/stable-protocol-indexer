@@ -217,7 +217,7 @@ class ScanLogsTransactions:
             d_tx = OrderedDict()
             d_tx["hash"] = raw_tx["hash"]
             d_tx["blockNumber"] = raw_tx["blockNumber"]
-            d_tx["address"] = raw_tx["address"]
+            d_tx["address"] = raw_tx["from"]
             d_tx["gas"] = raw_tx["gas"]
             d_tx["gasPrice"] = str(raw_tx["gasPrice"])
             d_tx["confirmations"] = self.connection_helper.connection_manager.block_number - raw_tx['blockNumber']
