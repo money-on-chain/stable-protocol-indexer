@@ -5,7 +5,7 @@
     "uri": "mongodb://localhost:27017/",
     "db": "moc_testnet"
   },
-  "debug": false,
+  "debug": true,
   "tasks": {
     "scan_raw_transactions": {"interval":  2},
     "scan_raw_transactions_confirming": {"interval":  2},
@@ -19,16 +19,16 @@
   "scan_raw_transactions": {
     "confirm_blocks": 10,
     "blocks_recession": 1,
-    "from_block": 5478465,
-    "to_block": 5478503,
-    "max_blocks_to_process": 10
+    "from_block": 4094077,
+    "to_block": 0,
+    "max_blocks_to_process": 100
   },
   "scan_raw_transactions_confirming": {
     "confirm_blocks": 20,
     "blocks_recession": 1,
-    "from_block": 4654131,
-    "to_block": 4654152,
-    "max_blocks_to_process": 10
+    "from_block": 3575677,
+    "to_block": 0,
+    "max_blocks_to_process": 100
   },
   "scan_tx_status": {
     "seconds_not_in_chain_error": 600,
