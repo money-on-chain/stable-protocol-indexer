@@ -21,10 +21,10 @@ if __name__ == '__main__':
     config = options_from_config()
 
     if 'APP_MONGO_URI' in os.environ:
-        config['mongo_uri'] = os.environ['APP_MONGO_URI']
+        config['mongo']['uri'] = os.environ['APP_MONGO_URI']
 
     if 'APP_MONGO_DB' in os.environ:
-        config['mongo_db'] = os.environ['APP_MONGO_DB']
+        config['mongo']['db'] = os.environ['APP_MONGO_DB']
 
     if 'APP_CONNECTION_URI' in os.environ:
         config['uri'] = os.environ['APP_CONNECTION_URI']
