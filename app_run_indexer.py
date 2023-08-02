@@ -20,12 +20,19 @@ if __name__ == '__main__':
 
     config = options_from_config()
 
+    # override config default
+    if 'APP_CONFIG' in os.environ:
+        config = json.loads(os.environ['APP_CONFIG'])
+
+    # override mongo uri from env
     if 'APP_MONGO_URI' in os.environ:
         config['mongo']['uri'] = os.environ['APP_MONGO_URI']
 
+    # override mongo db from env
     if 'APP_MONGO_DB' in os.environ:
         config['mongo']['db'] = os.environ['APP_MONGO_DB']
 
+    # override connection uri from env
     if 'APP_CONNECTION_URI' in os.environ:
         config['uri'] = os.environ['APP_CONNECTION_URI']
 
