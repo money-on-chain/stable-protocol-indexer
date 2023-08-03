@@ -305,6 +305,10 @@ class ScanLogsTransactions:
         count = 0
         if txs:
             for tx in txs:
+                # no process when no status
+                if 'status' not in tx:
+                    continue
+
                 # only status confirmed and confirming
                 if tx["status"] not in ["confirmed", "confirming"]:
                     continue
