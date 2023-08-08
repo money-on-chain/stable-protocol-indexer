@@ -19,15 +19,15 @@
   "scan_raw_transactions": {
     "confirm_blocks": 10,
     "blocks_recession": 1,
-    "from_block": 5478465,
-    "to_block": 5478503,
+    "from_block": 5538551,
+    "to_block": 0,
     "max_blocks_to_process": 100
   },
   "scan_raw_transactions_confirming": {
     "confirm_blocks": 20,
     "blocks_recession": 1,
-    "from_block": 4654131,
-    "to_block": 4654152,
+    "from_block": 5538551,
+    "to_block": 0,
     "max_blocks_to_process": 100
   },
   "scan_tx_status": {
