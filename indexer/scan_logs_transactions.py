@@ -14,7 +14,7 @@ from .events import EventMoCExchangeRiskProMint, \
     EventFastBtcBridgeNewBitcoinTransfer, \
     EventFastBtcBridgeBitcoinTransferStatusUpdated
 
-from .base.decoder import LogDecoder
+from .base.decoder import LogDecoder, UnknownEvent
 
 
 class ScanLogsTransactions:
@@ -245,7 +245,12 @@ class ScanLogsTransactions:
             for tx_log in raw_tx["logs"]:
                 log_address = str.lower(tx_log['address'])
                 if log_address in self.contracts_log_decoder:
-                    decoded_event = self.contracts_log_decoder[log_address].decode_log(tx_log)
+                    try:
+                        decoded_event = self.contracts_log_decoder[log_address].decode_log(tx_log)
+                    except UnknownEvent:
+                        log.error("Skipping. Not known event in ABI. Contract address: {0} Info: {1}".format(
+                            log_address, tx_log))
+                        continue
                     if decoded_event['name'] in self.map_events_contracts[log_address]:
                         log_index = tx_log['logIndex']
                         parsed_receipt = self.parse_tx_receipt(raw_tx, decoded_event['name'], log_index=log_index)
