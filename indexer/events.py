@@ -817,3 +817,651 @@ class EventFastBtcBridgeBitcoinTransferStatusUpdated(BaseEvent):
         log.info(d_tx)
 
         return parsed
+
+
+# ---------------------------------------------------------------------------
+# Lending and Borrowing events (MocLendingManager / MocLendingQueue)
+# ---------------------------------------------------------------------------
+
+LENDING_OPER_TYPE = {0: 'NONE', 1: 'BORROW', 2: 'REMOVE_AC_FROM_VAULT', 3: 'REPAY_WITH_AC'}
+
+
+class EventLendingDeposit(BaseEvent):
+
+    def parse_event_and_save(self, parsed_receipt, decoded_event):
+
+        parsed = self.parse_event(parsed_receipt, decoded_event)
+
+        collection = self.connection_helper.mongo_collection('event_Lending_Deposit')
+
+        tx_hash = parsed['hash']
+        log_index = parsed['logIndex']
+        id_event = "{0}:{1}".format(tx_hash, log_index)
+
+        d_event = dict()
+        d_event["hash"] = tx_hash
+        d_event["id_event"] = id_event
+        d_event["blockNumber"] = int(parsed["blockNumber"])
+        d_event["user"] = sanitize_address(parsed["user"]).lower()
+        d_event["recipient"] = sanitize_address(parsed["recipient"]).lower()
+        d_event["tpToken"] = sanitize_address(parsed["tpToken"])
+        d_event["tpAmount"] = str(parsed["tpAmount"])
+        d_event["depositUnits"] = str(parsed["depositUnits"])
+        d_event["createdAt"] = parsed["createdAt"]
+        d_event["lastUpdatedAt"] = datetime.datetime.now()
+
+        remove_query = {"hash": d_event["hash"], "id_event": {"$exists": False}}
+        if collection.find(remove_query):
+            collection.delete_many(remove_query)
+
+        collection.find_one_and_update(
+            {"id_event": d_event["id_event"]},
+            {"$set": d_event},
+            upsert=True)
+
+        user_ops_col = self.connection_helper.mongo_collection('lending_user_operations')
+        user_ops_col.find_one_and_update(
+            {"id_event": id_event},
+            {"$set": {
+                "id_event": id_event,
+                "hash": tx_hash,
+                "blockNumber": d_event["blockNumber"],
+                "eventName": "Deposit",
+                "user": d_event["user"],
+                "tpToken": d_event["tpToken"],
+                "createdAt": d_event["createdAt"],
+                "lastUpdatedAt": d_event["lastUpdatedAt"],
+                "extra": {
+                    "recipient": d_event["recipient"],
+                    "tpAmount": d_event["tpAmount"],
+                    "depositUnits": d_event["depositUnits"],
+                },
+            }},
+            upsert=True)
+
+        log.info("Event :: Lending_Deposit :: id: {0}".format(d_event["id_event"]))
+        log.info(d_event)
+
+        return d_event, parsed
+
+
+class EventLendingWithdraw(BaseEvent):
+
+    def parse_event_and_save(self, parsed_receipt, decoded_event):
+
+        parsed = self.parse_event(parsed_receipt, decoded_event)
+
+        collection = self.connection_helper.mongo_collection('event_Lending_Withdraw')
+
+        tx_hash = parsed['hash']
+        log_index = parsed['logIndex']
+        id_event = "{0}:{1}".format(tx_hash, log_index)
+
+        d_event = dict()
+        d_event["hash"] = tx_hash
+        d_event["id_event"] = id_event
+        d_event["blockNumber"] = int(parsed["blockNumber"])
+        d_event["user"] = sanitize_address(parsed["user"]).lower()
+        d_event["recipient"] = sanitize_address(parsed["recipient"]).lower()
+        d_event["tpToken"] = sanitize_address(parsed["tpToken"])
+        d_event["depositUnits"] = str(parsed["depositUnits"])
+        d_event["tpAmount"] = str(parsed["tpAmount"])
+        d_event["createdAt"] = parsed["createdAt"]
+        d_event["lastUpdatedAt"] = datetime.datetime.now()
+
+        remove_query = {"hash": d_event["hash"], "id_event": {"$exists": False}}
+        if collection.find(remove_query):
+            collection.delete_many(remove_query)
+
+        collection.find_one_and_update(
+            {"id_event": d_event["id_event"]},
+            {"$set": d_event},
+            upsert=True)
+
+        user_ops_col = self.connection_helper.mongo_collection('lending_user_operations')
+        user_ops_col.find_one_and_update(
+            {"id_event": id_event},
+            {"$set": {
+                "id_event": id_event,
+                "hash": tx_hash,
+                "blockNumber": d_event["blockNumber"],
+                "eventName": "Withdraw",
+                "user": d_event["user"],
+                "tpToken": d_event["tpToken"],
+                "createdAt": d_event["createdAt"],
+                "lastUpdatedAt": d_event["lastUpdatedAt"],
+                "extra": {
+                    "recipient": d_event["recipient"],
+                    "depositUnits": d_event["depositUnits"],
+                    "tpAmount": d_event["tpAmount"],
+                },
+            }},
+            upsert=True)
+
+        log.info("Event :: Lending_Withdraw :: id: {0}".format(d_event["id_event"]))
+        log.info(d_event)
+
+        return d_event, parsed
+
+
+class EventLendingAddACtoVault(BaseEvent):
+
+    def parse_event_and_save(self, parsed_receipt, decoded_event):
+
+        parsed = self.parse_event(parsed_receipt, decoded_event)
+
+        collection = self.connection_helper.mongo_collection('event_Lending_AddACtoVault')
+
+        tx_hash = parsed['hash']
+        log_index = parsed['logIndex']
+        id_event = "{0}:{1}".format(tx_hash, log_index)
+
+        d_event = dict()
+        d_event["hash"] = tx_hash
+        d_event["id_event"] = id_event
+        d_event["blockNumber"] = int(parsed["blockNumber"])
+        d_event["user"] = sanitize_address(parsed["user"]).lower()
+        d_event["recipient"] = sanitize_address(parsed["recipient"]).lower()
+        d_event["tpToken"] = sanitize_address(parsed["tpToken"])
+        d_event["mocBucket"] = sanitize_address(parsed["mocBucket"])
+        d_event["acAmount"] = str(parsed["acAmount"])
+        d_event["createdAt"] = parsed["createdAt"]
+        d_event["lastUpdatedAt"] = datetime.datetime.now()
+
+        remove_query = {"hash": d_event["hash"], "id_event": {"$exists": False}}
+        if collection.find(remove_query):
+            collection.delete_many(remove_query)
+
+        collection.find_one_and_update(
+            {"id_event": d_event["id_event"]},
+            {"$set": d_event},
+            upsert=True)
+
+        user_ops_col = self.connection_helper.mongo_collection('lending_user_operations')
+        user_ops_col.find_one_and_update(
+            {"id_event": id_event},
+            {"$set": {
+                "id_event": id_event,
+                "hash": tx_hash,
+                "blockNumber": d_event["blockNumber"],
+                "eventName": "AddACtoVault",
+                "user": d_event["user"],
+                "tpToken": d_event["tpToken"],
+                "createdAt": d_event["createdAt"],
+                "lastUpdatedAt": d_event["lastUpdatedAt"],
+                "extra": {
+                    "recipient": d_event["recipient"],
+                    "mocBucket": d_event["mocBucket"],
+                    "acAmount": d_event["acAmount"],
+                },
+            }},
+            upsert=True)
+
+        log.info("Event :: Lending_AddACtoVault :: id: {0}".format(d_event["id_event"]))
+        log.info(d_event)
+
+        return d_event, parsed
+
+
+class EventLendingRemoveACfromVault(BaseEvent):
+
+    def parse_event_and_save(self, parsed_receipt, decoded_event):
+
+        parsed = self.parse_event(parsed_receipt, decoded_event)
+
+        collection = self.connection_helper.mongo_collection('event_Lending_RemoveACfromVault')
+
+        tx_hash = parsed['hash']
+        log_index = parsed['logIndex']
+        id_event = "{0}:{1}".format(tx_hash, log_index)
+
+        d_event = dict()
+        d_event["hash"] = tx_hash
+        d_event["id_event"] = id_event
+        d_event["blockNumber"] = int(parsed["blockNumber"])
+        d_event["user"] = sanitize_address(parsed["user"]).lower()
+        d_event["recipient"] = sanitize_address(parsed["recipient"]).lower()
+        d_event["tpToken"] = sanitize_address(parsed["tpToken"])
+        d_event["mocBucket"] = sanitize_address(parsed["mocBucket"])
+        d_event["acAmount"] = str(parsed["acAmount"])
+        d_event["createdAt"] = parsed["createdAt"]
+        d_event["lastUpdatedAt"] = datetime.datetime.now()
+
+        remove_query = {"hash": d_event["hash"], "id_event": {"$exists": False}}
+        if collection.find(remove_query):
+            collection.delete_many(remove_query)
+
+        collection.find_one_and_update(
+            {"id_event": d_event["id_event"]},
+            {"$set": d_event},
+            upsert=True)
+
+        user_ops_col = self.connection_helper.mongo_collection('lending_user_operations')
+        user_ops_col.find_one_and_update(
+            {"id_event": id_event},
+            {"$set": {
+                "id_event": id_event,
+                "hash": tx_hash,
+                "blockNumber": d_event["blockNumber"],
+                "eventName": "RemoveACfromVault",
+                "user": d_event["user"],
+                "tpToken": d_event["tpToken"],
+                "createdAt": d_event["createdAt"],
+                "lastUpdatedAt": d_event["lastUpdatedAt"],
+                "extra": {
+                    "recipient": d_event["recipient"],
+                    "mocBucket": d_event["mocBucket"],
+                    "acAmount": d_event["acAmount"],
+                },
+            }},
+            upsert=True)
+
+        log.info("Event :: Lending_RemoveACfromVault :: id: {0}".format(d_event["id_event"]))
+        log.info(d_event)
+
+        return d_event, parsed
+
+
+class EventLendingBorrow(BaseEvent):
+
+    def parse_event_and_save(self, parsed_receipt, decoded_event):
+
+        parsed = self.parse_event(parsed_receipt, decoded_event)
+
+        collection = self.connection_helper.mongo_collection('event_Lending_Borrow')
+
+        tx_hash = parsed['hash']
+        log_index = parsed['logIndex']
+        id_event = "{0}:{1}".format(tx_hash, log_index)
+
+        d_event = dict()
+        d_event["hash"] = tx_hash
+        d_event["id_event"] = id_event
+        d_event["blockNumber"] = int(parsed["blockNumber"])
+        d_event["user"] = sanitize_address(parsed["user"]).lower()
+        d_event["recipient"] = sanitize_address(parsed["recipient"]).lower()
+        d_event["tpToken"] = sanitize_address(parsed["tpToken"])
+        d_event["mocBucket"] = sanitize_address(parsed["mocBucket"])
+        d_event["tpAmount"] = str(parsed["tpAmount"])
+        d_event["creditUnits"] = str(parsed["creditUnits"])
+        d_event["createdAt"] = parsed["createdAt"]
+        d_event["lastUpdatedAt"] = datetime.datetime.now()
+
+        remove_query = {"hash": d_event["hash"], "id_event": {"$exists": False}}
+        if collection.find(remove_query):
+            collection.delete_many(remove_query)
+
+        collection.find_one_and_update(
+            {"id_event": d_event["id_event"]},
+            {"$set": d_event},
+            upsert=True)
+
+        user_ops_col = self.connection_helper.mongo_collection('lending_user_operations')
+        user_ops_col.find_one_and_update(
+            {"id_event": id_event},
+            {"$set": {
+                "id_event": id_event,
+                "hash": tx_hash,
+                "blockNumber": d_event["blockNumber"],
+                "eventName": "Borrow",
+                "user": d_event["user"],
+                "tpToken": d_event["tpToken"],
+                "createdAt": d_event["createdAt"],
+                "lastUpdatedAt": d_event["lastUpdatedAt"],
+                "extra": {
+                    "recipient": d_event["recipient"],
+                    "mocBucket": d_event["mocBucket"],
+                    "tpAmount": d_event["tpAmount"],
+                    "creditUnits": d_event["creditUnits"],
+                },
+            }},
+            upsert=True)
+
+        log.info("Event :: Lending_Borrow :: id: {0}".format(d_event["id_event"]))
+        log.info(d_event)
+
+        return d_event, parsed
+
+
+class EventLendingRepay(BaseEvent):
+
+    def parse_event_and_save(self, parsed_receipt, decoded_event):
+
+        parsed = self.parse_event(parsed_receipt, decoded_event)
+
+        collection = self.connection_helper.mongo_collection('event_Lending_Repay')
+
+        tx_hash = parsed['hash']
+        log_index = parsed['logIndex']
+        id_event = "{0}:{1}".format(tx_hash, log_index)
+
+        d_event = dict()
+        d_event["hash"] = tx_hash
+        d_event["id_event"] = id_event
+        d_event["blockNumber"] = int(parsed["blockNumber"])
+        d_event["user"] = sanitize_address(parsed["user"]).lower()
+        d_event["recipient"] = sanitize_address(parsed["recipient"]).lower()
+        d_event["tpToken"] = sanitize_address(parsed["tpToken"])
+        d_event["mocBucket"] = sanitize_address(parsed["mocBucket"])
+        d_event["creditUnits"] = str(parsed["creditUnits"])
+        d_event["tpAmount"] = str(parsed["tpAmount"])
+        d_event["tpToFeeFlow"] = str(parsed["tpToFeeFlow"])
+        d_event["createdAt"] = parsed["createdAt"]
+        d_event["lastUpdatedAt"] = datetime.datetime.now()
+
+        remove_query = {"hash": d_event["hash"], "id_event": {"$exists": False}}
+        if collection.find(remove_query):
+            collection.delete_many(remove_query)
+
+        collection.find_one_and_update(
+            {"id_event": d_event["id_event"]},
+            {"$set": d_event},
+            upsert=True)
+
+        user_ops_col = self.connection_helper.mongo_collection('lending_user_operations')
+        user_ops_col.find_one_and_update(
+            {"id_event": id_event},
+            {"$set": {
+                "id_event": id_event,
+                "hash": tx_hash,
+                "blockNumber": d_event["blockNumber"],
+                "eventName": "Repay",
+                "user": d_event["user"],
+                "tpToken": d_event["tpToken"],
+                "createdAt": d_event["createdAt"],
+                "lastUpdatedAt": d_event["lastUpdatedAt"],
+                "extra": {
+                    "recipient": d_event["recipient"],
+                    "mocBucket": d_event["mocBucket"],
+                    "creditUnits": d_event["creditUnits"],
+                    "tpAmount": d_event["tpAmount"],
+                    "tpToFeeFlow": d_event["tpToFeeFlow"],
+                },
+            }},
+            upsert=True)
+
+        log.info("Event :: Lending_Repay :: id: {0}".format(d_event["id_event"]))
+        log.info(d_event)
+
+        return d_event, parsed
+
+
+class EventLendingRepayWithAC(BaseEvent):
+
+    def parse_event_and_save(self, parsed_receipt, decoded_event):
+
+        parsed = self.parse_event(parsed_receipt, decoded_event)
+
+        collection = self.connection_helper.mongo_collection('event_Lending_RepayWithAC')
+
+        tx_hash = parsed['hash']
+        log_index = parsed['logIndex']
+        id_event = "{0}:{1}".format(tx_hash, log_index)
+
+        d_event = dict()
+        d_event["hash"] = tx_hash
+        d_event["id_event"] = id_event
+        d_event["blockNumber"] = int(parsed["blockNumber"])
+        d_event["user"] = sanitize_address(parsed["user"]).lower()
+        d_event["tpToken"] = sanitize_address(parsed["tpToken"])
+        d_event["mocBucket"] = sanitize_address(parsed["mocBucket"])
+        d_event["creditUnits"] = str(parsed["creditUnits"])
+        d_event["acSold"] = str(parsed["acSold"])
+        d_event["tpAmount"] = str(parsed["tpAmount"])
+        d_event["tpToFeeFlow"] = str(parsed["tpToFeeFlow"])
+        d_event["createdAt"] = parsed["createdAt"]
+        d_event["lastUpdatedAt"] = datetime.datetime.now()
+
+        remove_query = {"hash": d_event["hash"], "id_event": {"$exists": False}}
+        if collection.find(remove_query):
+            collection.delete_many(remove_query)
+
+        collection.find_one_and_update(
+            {"id_event": d_event["id_event"]},
+            {"$set": d_event},
+            upsert=True)
+
+        user_ops_col = self.connection_helper.mongo_collection('lending_user_operations')
+        user_ops_col.find_one_and_update(
+            {"id_event": id_event},
+            {"$set": {
+                "id_event": id_event,
+                "hash": tx_hash,
+                "blockNumber": d_event["blockNumber"],
+                "eventName": "RepayWithAC",
+                "user": d_event["user"],
+                "tpToken": d_event["tpToken"],
+                "createdAt": d_event["createdAt"],
+                "lastUpdatedAt": d_event["lastUpdatedAt"],
+                "extra": {
+                    "mocBucket": d_event["mocBucket"],
+                    "creditUnits": d_event["creditUnits"],
+                    "acSold": d_event["acSold"],
+                    "tpAmount": d_event["tpAmount"],
+                    "tpToFeeFlow": d_event["tpToFeeFlow"],
+                },
+            }},
+            upsert=True)
+
+        log.info("Event :: Lending_RepayWithAC :: id: {0}".format(d_event["id_event"]))
+        log.info(d_event)
+
+        return d_event, parsed
+
+
+class EventLendingLiquidate(BaseEvent):
+
+    def parse_event_and_save(self, parsed_receipt, decoded_event):
+
+        parsed = self.parse_event(parsed_receipt, decoded_event)
+
+        collection = self.connection_helper.mongo_collection('event_Lending_Liquidate')
+
+        tx_hash = parsed['hash']
+        log_index = parsed['logIndex']
+        id_event = "{0}:{1}".format(tx_hash, log_index)
+
+        d_event = dict()
+        d_event["hash"] = tx_hash
+        d_event["id_event"] = id_event
+        d_event["blockNumber"] = int(parsed["blockNumber"])
+        d_event["liquidator"] = sanitize_address(parsed["liquidator"]).lower()
+        d_event["user"] = sanitize_address(parsed["user"]).lower()
+        d_event["tpToken"] = sanitize_address(parsed["tpToken"])
+        d_event["mocBucket"] = sanitize_address(parsed["mocBucket"])
+        d_event["acSwapped"] = str(parsed["acSwapped"])
+        d_event["tpPaid"] = str(parsed["tpPaid"])
+        d_event["tpToFeeFlow"] = str(parsed["tpToFeeFlow"])
+        d_event["isComplete"] = bool(parsed["isComplete"])
+        d_event["createdAt"] = parsed["createdAt"]
+        d_event["lastUpdatedAt"] = datetime.datetime.now()
+
+        remove_query = {"hash": d_event["hash"], "id_event": {"$exists": False}}
+        if collection.find(remove_query):
+            collection.delete_many(remove_query)
+
+        collection.find_one_and_update(
+            {"id_event": d_event["id_event"]},
+            {"$set": d_event},
+            upsert=True)
+
+        user_ops_col = self.connection_helper.mongo_collection('lending_user_operations')
+        user_ops_col.find_one_and_update(
+            {"id_event": id_event},
+            {"$set": {
+                "id_event": id_event,
+                "hash": tx_hash,
+                "blockNumber": d_event["blockNumber"],
+                "eventName": "Liquidate",
+                "user": d_event["user"],
+                "tpToken": d_event["tpToken"],
+                "createdAt": d_event["createdAt"],
+                "lastUpdatedAt": d_event["lastUpdatedAt"],
+                "extra": {
+                    "liquidator": d_event["liquidator"],
+                    "mocBucket": d_event["mocBucket"],
+                    "acSwapped": d_event["acSwapped"],
+                    "tpPaid": d_event["tpPaid"],
+                    "tpToFeeFlow": d_event["tpToFeeFlow"],
+                    "isComplete": d_event["isComplete"],
+                },
+            }},
+            upsert=True)
+
+        log.info("Event :: Lending_Liquidate :: id: {0}".format(d_event["id_event"]))
+        log.info(d_event)
+
+        return d_event, parsed
+
+
+class EventLendingTPInjection(BaseEvent):
+
+    def parse_event_and_save(self, parsed_receipt, decoded_event):
+
+        parsed = self.parse_event(parsed_receipt, decoded_event)
+
+        collection = self.connection_helper.mongo_collection('event_Lending_TPInjection')
+
+        tx_hash = parsed['hash']
+        log_index = parsed['logIndex']
+        id_event = "{0}:{1}".format(tx_hash, log_index)
+
+        d_event = dict()
+        d_event["hash"] = tx_hash
+        d_event["id_event"] = id_event
+        d_event["blockNumber"] = int(parsed["blockNumber"])
+        d_event["tpToken"] = sanitize_address(parsed["tpToken"])
+        d_event["tpAmount"] = str(parsed["tpAmount"])
+        d_event["createdAt"] = parsed["createdAt"]
+        d_event["lastUpdatedAt"] = datetime.datetime.now()
+
+        remove_query = {"hash": d_event["hash"], "id_event": {"$exists": False}}
+        if collection.find(remove_query):
+            collection.delete_many(remove_query)
+
+        collection.find_one_and_update(
+            {"id_event": d_event["id_event"]},
+            {"$set": d_event},
+            upsert=True)
+
+        log.info("Event :: Lending_TPInjection :: id: {0}".format(d_event["id_event"]))
+        log.info(d_event)
+
+        return d_event, parsed
+
+
+class EventLendingOperationQueued(BaseEvent):
+
+    def parse_event_and_save(self, parsed_receipt, decoded_event):
+
+        parsed = self.parse_event(parsed_receipt, decoded_event)
+
+        collection = self.connection_helper.mongo_collection('event_Lending_OperationQueued')
+
+        tx_hash = parsed['hash']
+        log_index = parsed['logIndex']
+        id_event = "{0}:{1}".format(tx_hash, log_index)
+
+        oper_type_int = int(parsed["operType"])
+
+        d_event = dict()
+        d_event["hash"] = tx_hash
+        d_event["id_event"] = id_event
+        d_event["blockNumber"] = int(parsed["blockNumber"])
+        d_event["operId"] = int(parsed["operId"])
+        d_event["operType"] = oper_type_int
+        d_event["operTypeName"] = LENDING_OPER_TYPE.get(oper_type_int, 'UNKNOWN')
+        d_event["user"] = sanitize_address(parsed["user"]).lower()
+        d_event["recipient"] = sanitize_address(parsed["recipient"]).lower()
+        d_event["tpToken"] = sanitize_address(parsed["tpToken"])
+        d_event["mocBucket"] = sanitize_address(parsed["mocBucket"])
+        d_event["amount"] = str(parsed["amount"])
+        d_event["createdAt"] = parsed["createdAt"]
+        d_event["lastUpdatedAt"] = datetime.datetime.now()
+
+        remove_query = {"hash": d_event["hash"], "id_event": {"$exists": False}}
+        if collection.find(remove_query):
+            collection.delete_many(remove_query)
+
+        collection.find_one_and_update(
+            {"id_event": d_event["id_event"]},
+            {"$set": d_event},
+            upsert=True)
+
+        log.info("Event :: Lending_OperationQueued :: operId: {0} type: {1}".format(
+            d_event["operId"], d_event["operTypeName"]))
+        log.info(d_event)
+
+        return d_event, parsed
+
+
+class EventLendingOperationError(BaseEvent):
+
+    def parse_event_and_save(self, parsed_receipt, decoded_event):
+
+        parsed = self.parse_event(parsed_receipt, decoded_event)
+
+        collection = self.connection_helper.mongo_collection('event_Lending_OperationError')
+
+        tx_hash = parsed['hash']
+        log_index = parsed['logIndex']
+        id_event = "{0}:{1}".format(tx_hash, log_index)
+
+        d_event = dict()
+        d_event["hash"] = tx_hash
+        d_event["id_event"] = id_event
+        d_event["blockNumber"] = int(parsed["blockNumber"])
+        d_event["operId"] = int(parsed["operId"])
+        d_event["reason"] = parsed["reason"].hex() if isinstance(parsed["reason"], (bytes, bytearray)) else str(parsed["reason"])
+        d_event["createdAt"] = parsed["createdAt"]
+        d_event["lastUpdatedAt"] = datetime.datetime.now()
+
+        remove_query = {"hash": d_event["hash"], "id_event": {"$exists": False}}
+        if collection.find(remove_query):
+            collection.delete_many(remove_query)
+
+        collection.find_one_and_update(
+            {"id_event": d_event["id_event"]},
+            {"$set": d_event},
+            upsert=True)
+
+        log.info("Event :: Lending_OperationError :: operId: {0}".format(d_event["operId"]))
+        log.info(d_event)
+
+        return d_event, parsed
+
+
+class EventLendingOperationExecuted(BaseEvent):
+
+    def parse_event_and_save(self, parsed_receipt, decoded_event):
+
+        parsed = self.parse_event(parsed_receipt, decoded_event)
+
+        collection = self.connection_helper.mongo_collection('event_Lending_OperationExecuted')
+
+        tx_hash = parsed['hash']
+        log_index = parsed['logIndex']
+        id_event = "{0}:{1}".format(tx_hash, log_index)
+
+        d_event = dict()
+        d_event["hash"] = tx_hash
+        d_event["id_event"] = id_event
+        d_event["blockNumber"] = int(parsed["blockNumber"])
+        d_event["executor"] = sanitize_address(parsed["executor"]).lower()
+        d_event["operId"] = int(parsed["operId"])
+        d_event["createdAt"] = parsed["createdAt"]
+        d_event["lastUpdatedAt"] = datetime.datetime.now()
+
+        remove_query = {"hash": d_event["hash"], "id_event": {"$exists": False}}
+        if collection.find(remove_query):
+            collection.delete_many(remove_query)
+
+        collection.find_one_and_update(
+            {"id_event": d_event["id_event"]},
+            {"$set": d_event},
+            upsert=True)
+
+        log.info("Event :: Lending_OperationExecuted :: operId: {0}".format(d_event["operId"]))
+        log.info(d_event)
+
+        return d_event, parsed

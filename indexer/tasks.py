@@ -1,3 +1,4 @@
+from pymongo import ASCENDING, DESCENDING
 
 from .base.main import ConnectionHelperMongo
 from .base.token import ERC20Token
@@ -16,7 +17,8 @@ from .contracts import Multicall2, \
     MoCInrateRRC20, \
     MoCSettlementRRC20, \
     MoCExchangeRRC20, \
-    FastBtcBridge
+    FastBtcBridge, \
+    MocLendingManager
 from .scan_raw_transactions import ScanRawTxs
 from .scan_logs_transactions import ScanLogsTransactions
 from .scan_transactions_status import ScanTxStatus
@@ -156,7 +158,25 @@ class StableIndexerTasks(TasksManager):
             contract_address=self.config['addresses']['FastBtcBridge'])
         self.contracts_addresses['FastBtcBridge'] = self.config['addresses']['FastBtcBridge']
 
+        # MocLendingManager (optional — only loaded when address is provided in config)
+        if self.config['addresses'].get('MocLendingManager'):
+            lending_address = self.config['addresses']['MocLendingManager']
+            log.info("MocLendingManager using address: {0}".format(lending_address.lower()))
+            self.contracts_loaded["MocLendingManager"] = MocLendingManager(
+                self.connection_helper.connection_manager,
+                contract_address=lending_address)
+            self.contracts_addresses['MocLendingManager'] = self.contracts_loaded[
+                "MocLendingManager"].address().lower()
+
         self.filter_contracts_addresses = [v.lower() for k, v in self.contracts_addresses.items()]
+
+    def create_mongo_index(self):
+
+        # Lending user operations collection
+        self.connection_helper.create_index('lending_user_operations', [('id_event', ASCENDING)], unique=True)
+        self.connection_helper.create_index(
+            'lending_user_operations', [('user', ASCENDING), ('blockNumber', DESCENDING)], unique=False)
+        self.connection_helper.create_index('lending_user_operations', [('blockNumber', DESCENDING)], unique=False)
 
     def schedule_tasks(self):
 
@@ -164,6 +184,9 @@ class StableIndexerTasks(TasksManager):
 
         # set max workers
         self.max_workers = 1
+
+        log.info("Creating mongo collection index...")
+        self.create_mongo_index()
 
         # 1. Scan Raw Transactions
         if 'scan_raw_transactions' in self.config['tasks']:

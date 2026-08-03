@@ -1,7 +1,11 @@
 import pymongo
+import logging
 
 
 __all__ = ["mongo_manager"]
+
+
+log = logging.getLogger()
 
 
 class MongoManager:
@@ -29,6 +33,21 @@ class MongoManager:
         collection = db[collection_name]
 
         return collection
+
+    def create_index(self, client, collection_name, index_map, unique=False):
+        # index_map: [("field_to_index", ASCENDING)]
+
+        collection = self.get_collection(client, collection_name)
+        create = True
+        for index in index_map:
+            if index[0] in collection.index_information():
+                create = False
+                break
+
+        if create:
+            collection.create_index(index_map, unique=unique)
+        else:
+            log.error("Cannot create index already exist collection indexing!")
 
 
 mongo_manager = MongoManager()
