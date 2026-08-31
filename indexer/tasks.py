@@ -19,7 +19,6 @@ from .contracts import Multicall2, \
     MoCInrateRRC20, \
     MoCSettlementRRC20, \
     MoCExchangeRRC20, \
-    FastBtcBridge, \
     OMOCIRegistry, \
     OMOCDelayMachine, \
     OMOCIncentiveV2, \
@@ -171,11 +170,6 @@ class StableIndexerTasks(TasksManager):
         self.contracts_loaded["TG"] = ERC20Token(
             self.connection_helper.connection_manager,
             contract_address=self.contracts_addresses['TG'])
-        # FastBTCBridge
-        self.contracts_loaded["FastBtcBridge"] = FastBtcBridge(
-            self.connection_helper.connection_manager,
-            contract_address=self.config['addresses']['FastBtcBridge'])
-        self.contracts_addresses['FastBtcBridge'] = self.config['addresses']['FastBtcBridge']
 
         # OMOC (Governance / Staking). Only loaded when an IRegistry address is configured
         if self.config['addresses'].get('IRegistry'):

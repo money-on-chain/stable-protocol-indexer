@@ -11,8 +11,6 @@ from .events import EventMoCExchangeRiskProMint, \
     EventMoCExchangeStableTokenMint, \
     EventMoCExchangeStableTokenRedeem, \
     EventMoCExchangeFreeStableTokenRedeem, \
-    EventFastBtcBridgeNewBitcoinTransfer, \
-    EventFastBtcBridgeBitcoinTransferStatusUpdated, \
     EventOMOCIncentiveV2ClaimOK, \
     EventOMOCVestingFactoryVestingCreated, \
     EventOMOCDelayMachinePaymentCancel, \
@@ -90,9 +88,6 @@ class ScanLogsTransactions:
         )
         contracts_log_decoder[self.contracts_addresses['TG'].lower()] = LogDecoder(
             self.contracts_loaded['TG'].sc
-        )
-        contracts_log_decoder[self.options['addresses']['FastBtcBridge'].lower()] = LogDecoder(
-            self.contracts_loaded['FastBtcBridge'].sc
         )
 
         # OMOC (only when governance / staking contracts are loaded)
@@ -213,19 +208,6 @@ class ScanLogsTransactions:
                     self.block_info,
                     'RESERVE')
             }
-
-        d_event[self.options['addresses']['FastBtcBridge'].lower()] = {
-            "NewBitcoinTransfer": EventFastBtcBridgeNewBitcoinTransfer(
-                self.options,
-                self.connection_helper,
-                self.filter_contracts_addresses,
-                self.block_info),
-            "BitcoinTransferStatusUpdated": EventFastBtcBridgeBitcoinTransferStatusUpdated(
-                self.options,
-                self.connection_helper,
-                self.filter_contracts_addresses,
-                self.block_info)
-        }
 
         # OMOC (only when governance / staking contracts are loaded)
         if 'DelayMachine' in self.contracts_addresses:
