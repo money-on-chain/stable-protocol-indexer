@@ -352,3 +352,123 @@ class FastBtcBridge(Contract):
 
         # finally load the contract
         self.load_contract()
+
+
+class OMOCIRegistry(Contract):
+
+    log = logging.getLogger()
+    precision = 10 ** 18
+
+    contract_name = 'IRegistry'
+    contract_abi = Contract.content_abi_file(
+        os.path.join(os.path.dirname(os.path.realpath(__file__)), 'abi/omoc/IRegistry.abi'))
+
+    def __init__(self, connection_manager, contract_address=None, contract_abi=None, contract_bin=None):
+
+        super().__init__(connection_manager,
+                         contract_address=contract_address,
+                         contract_abi=contract_abi,
+                         contract_bin=contract_bin)
+
+        # finally load the contract
+        self.load_contract()
+
+
+class OMOCDelayMachine(Contract):
+
+    log = logging.getLogger()
+    precision = 10 ** 18
+
+    contract_name = 'DelayMachine'
+    contract_abi = Contract.content_abi_file(
+        os.path.join(os.path.dirname(os.path.realpath(__file__)), 'abi/omoc/DelayMachine.abi'))
+
+    def __init__(self, connection_manager, contract_address=None, contract_abi=None, contract_bin=None):
+
+        super().__init__(connection_manager,
+                         contract_address=contract_address,
+                         contract_abi=contract_abi,
+                         contract_bin=contract_bin)
+
+        # finally load the contract
+        self.load_contract()
+
+
+class OMOCIncentiveV2(Contract):
+
+    log = logging.getLogger()
+    precision = 10 ** 18
+
+    contract_name = 'IncentiveV2'
+    contract_abi = Contract.content_abi_file(
+        os.path.join(os.path.dirname(os.path.realpath(__file__)), 'abi/omoc/IncentiveV2.abi'))
+
+    def __init__(self, connection_manager, contract_address=None, contract_abi=None, contract_bin=None):
+
+        super().__init__(connection_manager,
+                         contract_address=contract_address,
+                         contract_abi=contract_abi,
+                         contract_bin=contract_bin)
+
+        # finally load the contract
+        self.load_contract()
+
+
+class OMOCSupporters(Contract):
+
+    log = logging.getLogger()
+    precision = 10 ** 18
+
+    contract_name = 'Supporters'
+    contract_abi = Contract.content_abi_file(
+        os.path.join(os.path.dirname(os.path.realpath(__file__)), 'abi/omoc/Supporters.abi'))
+
+    def __init__(self, connection_manager, contract_address=None, contract_abi=None, contract_bin=None):
+
+        super().__init__(connection_manager,
+                         contract_address=contract_address,
+                         contract_abi=contract_abi,
+                         contract_bin=contract_bin)
+
+        # finally load the contract
+        self.load_contract()
+
+
+class OMOCVestingFactory(Contract):
+
+    log = logging.getLogger()
+    precision = 10 ** 18
+
+    contract_name = 'VestingFactory'
+    contract_abi = Contract.content_abi_file(
+        os.path.join(os.path.dirname(os.path.realpath(__file__)), 'abi/omoc/VestingFactory.abi'))
+
+    def __init__(self, connection_manager, contract_address=None, contract_abi=None, contract_bin=None):
+
+        super().__init__(connection_manager,
+                         contract_address=contract_address,
+                         contract_abi=contract_abi,
+                         contract_bin=contract_bin)
+
+        # finally load the contract
+        self.load_contract()
+
+
+class OMOCVotingMachine(Contract):
+
+    log = logging.getLogger()
+    precision = 10 ** 18
+
+    contract_name = 'VotingMachine'
+    contract_abi = Contract.content_abi_file(
+        os.path.join(os.path.dirname(os.path.realpath(__file__)), 'abi/omoc/VotingMachine.abi'))
+
+    def __init__(self, connection_manager, contract_address=None, contract_abi=None, contract_bin=None):
+
+        super().__init__(connection_manager,
+                         contract_address=contract_address,
+                         contract_abi=contract_abi,
+                         contract_bin=contract_bin)
+
+        # finally load the contract
+        self.load_contract()
