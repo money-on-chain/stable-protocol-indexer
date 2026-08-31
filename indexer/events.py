@@ -18,6 +18,25 @@ def oper_id_to_int(oper_id):
         return int(oper_id)
 
 
+def bytes32_to_hex(value):
+    """ Normalize a bytes32 log value to a 0x-prefixed hex string """
+    if isinstance(value, (bytes, bytearray)):
+        return "0x" + bytes(value).hex()
+    if isinstance(value, str) and not value.startswith("0x"):
+        return "0x" + value
+    return value
+
+
+def bytes32_to_text(value):
+    """ Best-effort decode of a bytes32 coin pair (e.g. b'BTCUSD\\x00..') to text """
+    try:
+        if isinstance(value, str):
+            value = bytes.fromhex(value[2:] if value.startswith("0x") else value)
+        return bytes(value).decode("utf-8").rstrip("\x00")
+    except Exception:
+        return None
+
+
 class BaseEvent:
 
     name = 'Name'
@@ -1516,6 +1535,436 @@ class EventOMOCVotingMachineUnregisterEvent(BaseEvent):
             upsert=True)
 
         log.info("Event :: VotingMachine_UnregisterEvent :: {0}".format(d_event["id_event"]))
+        log.info(d_event)
+
+        return d_event, parsed
+
+
+class EventOMOCOracleManagerOracleRegistered(BaseEvent):
+
+    def parse_event_and_save(self, parsed_receipt, decoded_event):
+
+        parsed = self.parse_event(parsed_receipt, decoded_event)
+
+        collection = self.connection_helper.mongo_collection('event_OracleManager_OracleRegistered')
+
+        tx_hash = parsed_receipt['hash']
+        id_event = "{0}:{1}".format(tx_hash, parsed_receipt['logIndex'])
+
+        d_event = dict()
+        d_event["hash"] = tx_hash
+        d_event["id_event"] = id_event
+        d_event["blockNumber"] = int(parsed_receipt["blockNumber"])
+        d_event["caller"] = sanitize_address(parsed["caller"]).lower()
+        d_event["addr"] = sanitize_address(parsed["addr"]).lower()
+        d_event["internetName"] = parsed["internetName"]
+        d_event["createdAt"] = parsed_receipt["createdAt"]
+        d_event["lastUpdatedAt"] = datetime.datetime.now()
+
+        remove_query = {"hash": d_event["hash"], "id_event": {"$exists": False}}
+        if collection.find(remove_query):
+            collection.delete_many(remove_query)
+
+        collection.find_one_and_update(
+            {"id_event": d_event["id_event"]},
+            {"$set": d_event},
+            upsert=True)
+
+        log.info("Event :: OracleManager_OracleRegistered :: {0}".format(d_event["id_event"]))
+        log.info(d_event)
+
+        return d_event, parsed
+
+
+class EventOMOCOracleManagerOracleStakeAdded(BaseEvent):
+
+    def parse_event_and_save(self, parsed_receipt, decoded_event):
+
+        parsed = self.parse_event(parsed_receipt, decoded_event)
+
+        collection = self.connection_helper.mongo_collection('event_OracleManager_OracleStakeAdded')
+
+        tx_hash = parsed_receipt['hash']
+        id_event = "{0}:{1}".format(tx_hash, parsed_receipt['logIndex'])
+
+        d_event = dict()
+        d_event["hash"] = tx_hash
+        d_event["id_event"] = id_event
+        d_event["blockNumber"] = int(parsed_receipt["blockNumber"])
+        d_event["caller"] = sanitize_address(parsed["caller"]).lower()
+        d_event["addr"] = sanitize_address(parsed["addr"]).lower()
+        d_event["stake"] = str(parsed["stake"])
+        d_event["createdAt"] = parsed_receipt["createdAt"]
+        d_event["lastUpdatedAt"] = datetime.datetime.now()
+
+        remove_query = {"hash": d_event["hash"], "id_event": {"$exists": False}}
+        if collection.find(remove_query):
+            collection.delete_many(remove_query)
+
+        collection.find_one_and_update(
+            {"id_event": d_event["id_event"]},
+            {"$set": d_event},
+            upsert=True)
+
+        log.info("Event :: OracleManager_OracleStakeAdded :: {0}".format(d_event["id_event"]))
+        log.info(d_event)
+
+        return d_event, parsed
+
+
+class EventOMOCOracleManagerOracleSubscribed(BaseEvent):
+
+    def parse_event_and_save(self, parsed_receipt, decoded_event):
+
+        parsed = self.parse_event(parsed_receipt, decoded_event)
+
+        collection = self.connection_helper.mongo_collection('event_OracleManager_OracleSubscribed')
+
+        tx_hash = parsed_receipt['hash']
+        id_event = "{0}:{1}".format(tx_hash, parsed_receipt['logIndex'])
+
+        d_event = dict()
+        d_event["hash"] = tx_hash
+        d_event["id_event"] = id_event
+        d_event["blockNumber"] = int(parsed_receipt["blockNumber"])
+        d_event["caller"] = sanitize_address(parsed["caller"]).lower()
+        d_event["coinpair"] = bytes32_to_hex(parsed["coinpair"])
+        d_event["coinPairName"] = bytes32_to_text(parsed["coinpair"])
+        d_event["createdAt"] = parsed_receipt["createdAt"]
+        d_event["lastUpdatedAt"] = datetime.datetime.now()
+
+        remove_query = {"hash": d_event["hash"], "id_event": {"$exists": False}}
+        if collection.find(remove_query):
+            collection.delete_many(remove_query)
+
+        collection.find_one_and_update(
+            {"id_event": d_event["id_event"]},
+            {"$set": d_event},
+            upsert=True)
+
+        log.info("Event :: OracleManager_OracleSubscribed :: {0}".format(d_event["id_event"]))
+        log.info(d_event)
+
+        return d_event, parsed
+
+
+class EventOMOCOracleManagerOracleUnsubscribed(BaseEvent):
+
+    def parse_event_and_save(self, parsed_receipt, decoded_event):
+
+        parsed = self.parse_event(parsed_receipt, decoded_event)
+
+        collection = self.connection_helper.mongo_collection('event_OracleManager_OracleUnsubscribed')
+
+        tx_hash = parsed_receipt['hash']
+        id_event = "{0}:{1}".format(tx_hash, parsed_receipt['logIndex'])
+
+        d_event = dict()
+        d_event["hash"] = tx_hash
+        d_event["id_event"] = id_event
+        d_event["blockNumber"] = int(parsed_receipt["blockNumber"])
+        d_event["caller"] = sanitize_address(parsed["caller"]).lower()
+        d_event["coinpair"] = bytes32_to_hex(parsed["coinpair"])
+        d_event["coinPairName"] = bytes32_to_text(parsed["coinpair"])
+        d_event["createdAt"] = parsed_receipt["createdAt"]
+        d_event["lastUpdatedAt"] = datetime.datetime.now()
+
+        remove_query = {"hash": d_event["hash"], "id_event": {"$exists": False}}
+        if collection.find(remove_query):
+            collection.delete_many(remove_query)
+
+        collection.find_one_and_update(
+            {"id_event": d_event["id_event"]},
+            {"$set": d_event},
+            upsert=True)
+
+        log.info("Event :: OracleManager_OracleUnsubscribed :: {0}".format(d_event["id_event"]))
+        log.info(d_event)
+
+        return d_event, parsed
+
+
+class EventOMOCOracleManagerOracleRemoved(BaseEvent):
+
+    def parse_event_and_save(self, parsed_receipt, decoded_event):
+
+        parsed = self.parse_event(parsed_receipt, decoded_event)
+
+        collection = self.connection_helper.mongo_collection('event_OracleManager_OracleRemoved')
+
+        tx_hash = parsed_receipt['hash']
+        id_event = "{0}:{1}".format(tx_hash, parsed_receipt['logIndex'])
+
+        d_event = dict()
+        d_event["hash"] = tx_hash
+        d_event["id_event"] = id_event
+        d_event["blockNumber"] = int(parsed_receipt["blockNumber"])
+        d_event["caller"] = sanitize_address(parsed["caller"]).lower()
+        d_event["createdAt"] = parsed_receipt["createdAt"]
+        d_event["lastUpdatedAt"] = datetime.datetime.now()
+
+        remove_query = {"hash": d_event["hash"], "id_event": {"$exists": False}}
+        if collection.find(remove_query):
+            collection.delete_many(remove_query)
+
+        collection.find_one_and_update(
+            {"id_event": d_event["id_event"]},
+            {"$set": d_event},
+            upsert=True)
+
+        log.info("Event :: OracleManager_OracleRemoved :: {0}".format(d_event["id_event"]))
+        log.info(d_event)
+
+        return d_event, parsed
+
+
+class BaseCoinPairPriceEvent(BaseEvent):
+    """ CoinPairPrice has one deployment per coin pair; keep track of which one emitted """
+
+    def __init__(self, options, connection_helper, filter_contracts_addresses, block_info,
+                 coin_pair=None, contract_address=None):
+
+        self.coin_pair = coin_pair
+        self.contract_address = (contract_address or "").lower()
+
+        super().__init__(options, connection_helper, filter_contracts_addresses, block_info)
+
+
+class EventOMOCCoinPairPricePricePublished(BaseCoinPairPriceEvent):
+
+    def parse_event_and_save(self, parsed_receipt, decoded_event):
+
+        parsed = self.parse_event(parsed_receipt, decoded_event)
+
+        collection = self.connection_helper.mongo_collection('event_CoinPairPrice_PricePublished')
+
+        tx_hash = parsed_receipt['hash']
+        id_event = "{0}:{1}".format(tx_hash, parsed_receipt['logIndex'])
+
+        d_event = dict()
+        d_event["hash"] = tx_hash
+        d_event["id_event"] = id_event
+        d_event["blockNumber"] = int(parsed_receipt["blockNumber"])
+        d_event["contractAddress"] = self.contract_address
+        d_event["coinPair"] = self.coin_pair
+        d_event["sender"] = sanitize_address(parsed["sender"]).lower()
+        d_event["price"] = str(parsed["price"])
+        d_event["votedOracle"] = sanitize_address(parsed["votedOracle"]).lower()
+        d_event["priceBlockNumber"] = str(parsed["blockNumber"])
+        d_event["createdAt"] = parsed_receipt["createdAt"]
+        d_event["lastUpdatedAt"] = datetime.datetime.now()
+
+        remove_query = {"hash": d_event["hash"], "id_event": {"$exists": False}}
+        if collection.find(remove_query):
+            collection.delete_many(remove_query)
+
+        collection.find_one_and_update(
+            {"id_event": d_event["id_event"]},
+            {"$set": d_event},
+            upsert=True)
+
+        log.info("Event :: CoinPairPrice_PricePublished :: {0} :: {1}".format(self.coin_pair, d_event["id_event"]))
+        log.info(d_event)
+
+        return d_event, parsed
+
+
+class EventOMOCCoinPairPriceEmergencyPricePublished(BaseCoinPairPriceEvent):
+
+    def parse_event_and_save(self, parsed_receipt, decoded_event):
+
+        parsed = self.parse_event(parsed_receipt, decoded_event)
+
+        collection = self.connection_helper.mongo_collection('event_CoinPairPrice_EmergencyPricePublished')
+
+        tx_hash = parsed_receipt['hash']
+        id_event = "{0}:{1}".format(tx_hash, parsed_receipt['logIndex'])
+
+        d_event = dict()
+        d_event["hash"] = tx_hash
+        d_event["id_event"] = id_event
+        d_event["blockNumber"] = int(parsed_receipt["blockNumber"])
+        d_event["contractAddress"] = self.contract_address
+        d_event["coinPair"] = self.coin_pair
+        d_event["sender"] = sanitize_address(parsed["sender"]).lower()
+        d_event["price"] = str(parsed["price"])
+        d_event["votedOracle"] = sanitize_address(parsed["votedOracle"]).lower()
+        d_event["priceBlockNumber"] = str(parsed["blockNumber"])
+        d_event["createdAt"] = parsed_receipt["createdAt"]
+        d_event["lastUpdatedAt"] = datetime.datetime.now()
+
+        remove_query = {"hash": d_event["hash"], "id_event": {"$exists": False}}
+        if collection.find(remove_query):
+            collection.delete_many(remove_query)
+
+        collection.find_one_and_update(
+            {"id_event": d_event["id_event"]},
+            {"$set": d_event},
+            upsert=True)
+
+        log.info("Event :: CoinPairPrice_EmergencyPricePublished :: {0} :: {1}".format(
+            self.coin_pair, d_event["id_event"]))
+        log.info(d_event)
+
+        return d_event, parsed
+
+
+class EventOMOCCoinPairPriceForcedPriceQueryModeSet(BaseCoinPairPriceEvent):
+
+    def parse_event_and_save(self, parsed_receipt, decoded_event):
+
+        parsed = self.parse_event(parsed_receipt, decoded_event)
+
+        collection = self.connection_helper.mongo_collection('event_CoinPairPrice_ForcedPriceQueryModeSet')
+
+        tx_hash = parsed_receipt['hash']
+        id_event = "{0}:{1}".format(tx_hash, parsed_receipt['logIndex'])
+
+        d_event = dict()
+        d_event["hash"] = tx_hash
+        d_event["id_event"] = id_event
+        d_event["blockNumber"] = int(parsed_receipt["blockNumber"])
+        d_event["contractAddress"] = self.contract_address
+        d_event["coinPair"] = self.coin_pair
+        d_event["setter"] = sanitize_address(parsed["setter"]).lower()
+        d_event["mode"] = int(parsed["mode"])
+        d_event["createdAt"] = parsed_receipt["createdAt"]
+        d_event["lastUpdatedAt"] = datetime.datetime.now()
+
+        remove_query = {"hash": d_event["hash"], "id_event": {"$exists": False}}
+        if collection.find(remove_query):
+            collection.delete_many(remove_query)
+
+        collection.find_one_and_update(
+            {"id_event": d_event["id_event"]},
+            {"$set": d_event},
+            upsert=True)
+
+        log.info("Event :: CoinPairPrice_ForcedPriceQueryModeSet :: {0} :: {1}".format(
+            self.coin_pair, d_event["id_event"]))
+        log.info(d_event)
+
+        return d_event, parsed
+
+
+class EventOMOCCoinPairPriceOracleRewardTransfer(BaseCoinPairPriceEvent):
+
+    def parse_event_and_save(self, parsed_receipt, decoded_event):
+
+        parsed = self.parse_event(parsed_receipt, decoded_event)
+
+        collection = self.connection_helper.mongo_collection('event_CoinPairPrice_OracleRewardTransfer')
+
+        tx_hash = parsed_receipt['hash']
+        id_event = "{0}:{1}".format(tx_hash, parsed_receipt['logIndex'])
+
+        d_event = dict()
+        d_event["hash"] = tx_hash
+        d_event["id_event"] = id_event
+        d_event["blockNumber"] = int(parsed_receipt["blockNumber"])
+        d_event["contractAddress"] = self.contract_address
+        d_event["coinPair"] = self.coin_pair
+        d_event["roundNumber"] = int(parsed["roundNumber"])
+        d_event["oracleOwnerAddress"] = sanitize_address(parsed["oracleOwnerAddress"]).lower()
+        d_event["toOwnerAddress"] = sanitize_address(parsed["toOwnerAddress"]).lower()
+        d_event["amount"] = str(parsed["amount"])
+        d_event["createdAt"] = parsed_receipt["createdAt"]
+        d_event["lastUpdatedAt"] = datetime.datetime.now()
+
+        remove_query = {"hash": d_event["hash"], "id_event": {"$exists": False}}
+        if collection.find(remove_query):
+            collection.delete_many(remove_query)
+
+        collection.find_one_and_update(
+            {"id_event": d_event["id_event"]},
+            {"$set": d_event},
+            upsert=True)
+
+        log.info("Event :: CoinPairPrice_OracleRewardTransfer :: {0} :: {1}".format(
+            self.coin_pair, d_event["id_event"]))
+        log.info(d_event)
+
+        return d_event, parsed
+
+
+class EventOMOCCoinPairPriceNewRound(BaseCoinPairPriceEvent):
+
+    def parse_event_and_save(self, parsed_receipt, decoded_event):
+
+        parsed = self.parse_event(parsed_receipt, decoded_event)
+
+        collection = self.connection_helper.mongo_collection('event_CoinPairPrice_NewRound')
+
+        tx_hash = parsed_receipt['hash']
+        id_event = "{0}:{1}".format(tx_hash, parsed_receipt['logIndex'])
+
+        selected_oracles = [sanitize_address(a).lower() for a in parsed.get("selectedOracles", [])]
+
+        d_event = dict()
+        d_event["hash"] = tx_hash
+        d_event["id_event"] = id_event
+        d_event["blockNumber"] = int(parsed_receipt["blockNumber"])
+        d_event["contractAddress"] = self.contract_address
+        d_event["coinPair"] = self.coin_pair
+        d_event["caller"] = sanitize_address(parsed["caller"]).lower()
+        d_event["number"] = int(parsed["number"])
+        d_event["totalPoints"] = str(parsed["totalPoints"])
+        d_event["startBlock"] = int(parsed["startBlock"])
+        d_event["lockPeriodTimestamp"] = int(parsed["lockPeriodTimestamp"])
+        d_event["selectedOracles"] = selected_oracles
+        d_event["createdAt"] = parsed_receipt["createdAt"]
+        d_event["lastUpdatedAt"] = datetime.datetime.now()
+
+        remove_query = {"hash": d_event["hash"], "id_event": {"$exists": False}}
+        if collection.find(remove_query):
+            collection.delete_many(remove_query)
+
+        collection.find_one_and_update(
+            {"id_event": d_event["id_event"]},
+            {"$set": d_event},
+            upsert=True)
+
+        log.info("Event :: CoinPairPrice_NewRound :: {0} :: {1}".format(self.coin_pair, d_event["id_event"]))
+        log.info(d_event)
+
+        return d_event, parsed
+
+
+class EventOMOCCoinPairPriceOracleAutoUnsubscribed(BaseCoinPairPriceEvent):
+
+    def parse_event_and_save(self, parsed_receipt, decoded_event):
+
+        parsed = self.parse_event(parsed_receipt, decoded_event)
+
+        collection = self.connection_helper.mongo_collection('event_CoinPairPrice_OracleAutoUnsubscribed')
+
+        tx_hash = parsed_receipt['hash']
+        id_event = "{0}:{1}".format(tx_hash, parsed_receipt['logIndex'])
+
+        d_event = dict()
+        d_event["hash"] = tx_hash
+        d_event["id_event"] = id_event
+        d_event["blockNumber"] = int(parsed_receipt["blockNumber"])
+        d_event["contractAddress"] = self.contract_address
+        d_event["coinPair"] = self.coin_pair
+        d_event["oracleOwnerAddr"] = sanitize_address(parsed["oracleOwnerAddr"]).lower()
+        d_event["coinPairId"] = bytes32_to_hex(parsed["coinPair"])
+        d_event["roundNumber"] = int(parsed["roundNumber"])
+        d_event["missedSignatureRounds"] = int(parsed["missedSignatureRounds"])
+        d_event["createdAt"] = parsed_receipt["createdAt"]
+        d_event["lastUpdatedAt"] = datetime.datetime.now()
+
+        remove_query = {"hash": d_event["hash"], "id_event": {"$exists": False}}
+        if collection.find(remove_query):
+            collection.delete_many(remove_query)
+
+        collection.find_one_and_update(
+            {"id_event": d_event["id_event"]},
+            {"$set": d_event},
+            upsert=True)
+
+        log.info("Event :: CoinPairPrice_OracleAutoUnsubscribed :: {0} :: {1}".format(
+            self.coin_pair, d_event["id_event"]))
         log.info(d_event)
 
         return d_event, parsed

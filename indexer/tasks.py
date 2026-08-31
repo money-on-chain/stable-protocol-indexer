@@ -2,6 +2,8 @@
 import os
 import json
 
+from web3 import Web3
+
 from .base.main import ConnectionHelperMongo
 from .base.token import ERC20Token
 from .tasks_manager import TasksManager
@@ -24,7 +26,9 @@ from .contracts import Multicall2, \
     OMOCIncentiveV2, \
     OMOCSupporters, \
     OMOCVestingFactory, \
-    OMOCVotingMachine
+    OMOCVotingMachine, \
+    OMOCOracleManager, \
+    OMOCCoinPairPrice
 from .scan_raw_transactions import ScanRawTxs
 from .scan_logs_transactions import ScanLogsTransactions
 from .scan_transactions_status import ScanTxStatus
@@ -171,11 +175,16 @@ class StableIndexerTasks(TasksManager):
             self.connection_helper.connection_manager,
             contract_address=self.contracts_addresses['TG'])
 
-        # OMOC (Governance / Staking). Only loaded when an IRegistry address is configured
+        # OMOC (Governance / Staking / Oracles). Only loaded when an IRegistry address is configured
         if self.config['addresses'].get('IRegistry'):
             self.load_omoc_contracts()
 
-        self.filter_contracts_addresses = [v.lower() for k, v in self.contracts_addresses.items()]
+        self.filter_contracts_addresses = []
+        for k, v in self.contracts_addresses.items():
+            if isinstance(v, list):
+                self.filter_contracts_addresses.extend([a.lower() for a in v])
+            else:
+                self.filter_contracts_addresses.append(v.lower())
 
     def load_omoc_contracts(self):
         """ Load OMOC (governance / staking) contracts and resolve their addresses """
@@ -231,6 +240,47 @@ class StableIndexerTasks(TasksManager):
             self.connection_helper.connection_manager,
             contract_address=self.contracts_addresses['VotingMachine'])
         self.contracts_addresses['VotingMachine'] = self.contracts_loaded["VotingMachine"].address().lower()
+
+        # Decentralized Oracles
+        self.load_omoc_oracle_contracts(omoc)
+
+    def load_omoc_oracle_contracts(self, omoc):
+        """ Load the OracleManager and every registered CoinPairPrice instance """
+
+        # OracleManager
+        oracle_manager_address = self.contracts_loaded["IRegistry"].sc.functions.getAddress(
+            omoc['RegistryConstants']['ORACLE_MANAGER_ADDR']).call().lower()
+        log.info("OracleManager using address: {0}".format(oracle_manager_address))
+        self.contracts_loaded["OracleManager"] = OMOCOracleManager(
+            self.connection_helper.connection_manager,
+            contract_address=oracle_manager_address)
+        self.contracts_addresses['OracleManager'] = oracle_manager_address
+
+        # CoinPairPrice: one contract per registered coin pair
+        self.contracts_loaded["CoinPairPrice"] = list()
+        self.contracts_addresses['CoinPairPrice'] = list()
+        self.contracts_coin_pairs = list()
+
+        zero_address = '0x0000000000000000000000000000000000000000'
+        coin_pair_count = self.contracts_loaded["OracleManager"].coin_pair_count()
+        for i in range(coin_pair_count):
+            coin_pair = self.contracts_loaded["OracleManager"].coin_pair_at_index(i)
+            cp_address = self.contracts_loaded["OracleManager"].contract_address_of(coin_pair).lower()
+            if cp_address == zero_address:
+                # deleted coin pair
+                continue
+            try:
+                coin_pair_name = Web3.to_text(coin_pair).rstrip('\x00')
+            except Exception:
+                coin_pair_name = coin_pair.hex() if hasattr(coin_pair, 'hex') else str(coin_pair)
+            log.info("CoinPairPrice ({0}) using address: {1}".format(coin_pair_name, cp_address))
+            cp_contract = OMOCCoinPairPrice(
+                self.connection_helper.connection_manager,
+                contract_address=cp_address)
+            cp_contract.coin_pair = coin_pair_name
+            self.contracts_loaded["CoinPairPrice"].append(cp_contract)
+            self.contracts_addresses['CoinPairPrice'].append(cp_address)
+            self.contracts_coin_pairs.append(coin_pair_name)
 
     def schedule_tasks(self):
 
