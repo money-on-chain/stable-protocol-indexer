@@ -21,17 +21,35 @@ Every write is an upsert on ``id_event`` (``{txHash}:{logIndex}``) so it is
 idempotent: safe to re-run, safe to overlap with the live indexer, safe to stop
 and resume.
 
+Resume state lives in a mongo collection (default ``omoc_backfill``, a single
+doc ``_id="cursor"``), not a local file, so an ECS task with no persistent
+volume can be killed and restarted and it picks up from the last committed
+block.
+
+Config / environment
+--------------------
+``--config`` points at an indexer settings json. These env vars override the
+file (same names ``app_run_indexer.py`` uses), which is how you feed it on ECS:
+
+    APP_CONFIG           full config json, replaces the file entirely
+    APP_MONGO_URI    ->  mongo.uri
+    APP_MONGO_DB     ->  mongo.db
+    APP_CONNECTION_URI  ->  uri  (RSK RPC endpoint)
+
 Usage
 -----
     python scripts/backfill_omoc.py --config settings/productive/roc-mainnet.json --from-block 3000000
     python scripts/backfill_omoc.py --config config.json --from-block 4200000 --to-block 4300000 --dry-run
     python scripts/backfill_omoc.py --config config.json --addresses-only
+    # resume: omit --from-block, it reads last_block from the mongo cursor
+    python scripts/backfill_omoc.py --config config.json
 """
 
 import argparse
 import datetime
 import json
 import os
+import re
 import sys
 import time
 
@@ -59,10 +77,37 @@ OMOC_SCALAR_KEYS = [
 
 RANGE_ERROR_HINTS = ("limit", "range", "too many", "10000", "query returned more", "more than")
 
+# resume cursor: a single document {_id: "cursor"} in this collection
+DEFAULT_STATE_COLLECTION = "omoc_backfill"
+STATE_DOC_ID = "cursor"
+
+
+def _redact(uri):
+    """Hide user:pass@ credentials before logging a connection string."""
+    return re.sub(r"://[^/@]+@", "://***@", uri or "")
+
 
 def load_config(path):
-    with open(path) as f:
-        return json.load(f)
+    """Load the settings json, then apply the same env overrides as app_run_indexer.py."""
+
+    if "APP_CONFIG" in os.environ:
+        config = json.loads(os.environ["APP_CONFIG"])
+        log.info("config loaded from APP_CONFIG env")
+    else:
+        with open(path) as f:
+            config = json.load(f)
+
+    config.setdefault("mongo", {})
+    if os.environ.get("APP_MONGO_URI"):
+        config["mongo"]["uri"] = os.environ["APP_MONGO_URI"]
+    if os.environ.get("APP_MONGO_DB"):
+        config["mongo"]["db"] = os.environ["APP_MONGO_DB"]
+    if os.environ.get("APP_CONNECTION_URI"):
+        config["uri"] = os.environ["APP_CONNECTION_URI"]
+
+    log.info("mongo: {0} db={1}".format(_redact(config["mongo"].get("uri")), config["mongo"].get("db")))
+    log.info("rpc:   {0}".format(config.get("uri")))
+    return config
 
 
 def collect_omoc_addresses(contracts_addresses):
@@ -102,10 +147,25 @@ def build_scanner(config):
 
 
 def block_timestamp(connection_manager, cache, block_number):
+    """tz-aware datetime for a block, built like scan_raw_transactions does."""
     if block_number not in cache:
-        ts = connection_manager.block_timestamp(block_number)
+        ts = connection_manager.get_block(block_number)["timestamp"]
         cache[block_number] = datetime.datetime.fromtimestamp(ts, LOCAL_TIMEZONE)
     return cache[block_number]
+
+
+def load_state(collection):
+    return collection.find_one({"_id": STATE_DOC_ID})
+
+
+def save_state(collection, **fields):
+    now = datetime.datetime.now(LOCAL_TIMEZONE)
+    fields["updatedAt"] = now
+    collection.update_one(
+        {"_id": STATE_DOC_ID},
+        {"$set": fields, "$setOnInsert": {"createdAt": now}},
+        upsert=True,
+    )
 
 
 def fetch_logs(web3, addresses, start, end, chunk, min_chunk):
@@ -184,12 +244,15 @@ def route_log(scanner, connection_manager, ts_cache, raw_log, dry_run):
 def parse_args():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--config", default="config.json", help="path to the indexer config json (default: config.json)")
-    parser.add_argument("--from-block", type=int, help="first block to scan (or read from --state-file)")
+    parser.add_argument("--from-block", type=int, help="first block to scan (omit to resume from the mongo cursor)")
     parser.add_argument("--to-block", type=int, help="last block to scan (default: chain tip - scan_logs.confirm_blocks)")
     parser.add_argument("--chunk", type=int, default=2000, help="initial eth_getLogs window in blocks (default: 2000)")
     parser.add_argument("--min-chunk", type=int, default=100, help="smallest window to shrink to on range errors (default: 100)")
-    parser.add_argument("--state-file", help="json file to persist/resume the last completed block (kept out of mongo)")
-    parser.add_argument("--dry-run", action="store_true", help="decode and count only; write nothing")
+    parser.add_argument("--state-collection", default=DEFAULT_STATE_COLLECTION,
+                        help="mongo collection holding the resume cursor (default: {0})".format(DEFAULT_STATE_COLLECTION))
+    parser.add_argument("--reset-state", action="store_true",
+                        help="delete the resume cursor before starting (ignored with --dry-run)")
+    parser.add_argument("--dry-run", action="store_true", help="decode and count only; write no events and no cursor")
     parser.add_argument("--addresses-only", action="store_true", help="print the resolved OMOC addresses and exit")
     return parser.parse_args()
 
@@ -216,18 +279,27 @@ def main():
             log.info("{0:16s} {1}  ({2})".format("CoinPairPrice", cp, name))
         return
 
+    state_collection = tasks.connection_helper.mongo_collection(args.state_collection)
+    if args.reset_state and not args.dry_run:
+        state_collection.delete_one({"_id": STATE_DOC_ID})
+        log.info("resume cursor {0}.{1} deleted".format(args.state_collection, STATE_DOC_ID))
+
+    state = load_state(state_collection)
+
     from_block = args.from_block
-    if from_block is None and args.state_file and os.path.exists(args.state_file):
-        with open(args.state_file) as f:
-            from_block = json.load(f)["last_block"] + 1
-            log.info("Resuming from --state-file at block {0}".format(from_block))
+    if from_block is None and state and state.get("last_block") is not None:
+        from_block = state["last_block"] + 1
+        log.info("resuming from mongo cursor {0}.{1}: last_block={2} -> from {3}".format(
+            args.state_collection, STATE_DOC_ID, state["last_block"], from_block))
     if from_block is None:
-        raise SystemExit("--from-block is required (or provide an existing --state-file)")
+        raise SystemExit(
+            "--from-block is required on the first run (no resume cursor in '{0}')".format(args.state_collection))
 
     tip = connection_manager.block_number
     to_block = args.to_block if args.to_block is not None else tip - config["scan_logs"]["confirm_blocks"]
     if from_block > to_block:
-        raise SystemExit("from-block ({0}) is past to-block ({1})".format(from_block, to_block))
+        log.info("nothing to do: from-block {0} is past to-block {1} (already caught up)".format(from_block, to_block))
+        return
 
     log.info(
         "OMOC backfill :: blocks {0} -> {1} :: {2} contracts :: {3}".format(
@@ -260,13 +332,29 @@ def main():
             )
         )
 
-        if args.state_file and not args.dry_run:
-            with open(args.state_file, "w") as f:
-                json.dump({"last_block": stop, "updatedAt": datetime.datetime.now().isoformat()}, f)
+        if not args.dry_run:
+            save_state(
+                state_collection,
+                last_block=stop,
+                from_block=from_block,
+                to_block=to_block,
+                events_written=total,
+                status="running",
+            )
 
         start = stop + 1
 
     elapsed = time.time() - started
+    if not args.dry_run:
+        save_state(
+            state_collection,
+            last_block=to_block,
+            from_block=from_block,
+            to_block=to_block,
+            events_written=total,
+            status="done",
+            completedAt=datetime.datetime.now(LOCAL_TIMEZONE),
+        )
     log.info("=" * 60)
     log.info("OMOC backfill done in {0:.1f}s :: {1} logs seen, {2} events {3}".format(
         elapsed, scanned_logs, total, "counted" if args.dry_run else "written"))

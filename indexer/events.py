@@ -1729,6 +1729,13 @@ class BaseCoinPairPriceEvent(BaseEvent):
 
         super().__init__(options, connection_helper, filter_contracts_addresses, block_info)
 
+    def parse_event(self, parsed_receipt, decoded_event):
+        """ Like BaseEvent.parse_event, but event params win over colliding receipt keys
+        instead of raising: PricePublished / EmergencyPricePublished carry their own
+        ``blockNumber``. Handlers still read receipt-level values from ``parsed_receipt``. """
+        fields = {field['name']: field['value'] for field in decoded_event}
+        return {**parsed_receipt, **fields}
+
 
 class EventOMOCCoinPairPricePricePublished(BaseCoinPairPriceEvent):
 
