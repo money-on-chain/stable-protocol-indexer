@@ -248,6 +248,8 @@ def parse_args():
     parser.add_argument("--to-block", type=int, help="last block to scan (default: chain tip - scan_logs.confirm_blocks)")
     parser.add_argument("--chunk", type=int, default=2000, help="initial eth_getLogs window in blocks (default: 2000)")
     parser.add_argument("--min-chunk", type=int, default=100, help="smallest window to shrink to on range errors (default: 100)")
+    parser.add_argument("--delay", type=float, default=0,
+                        help="seconds to sleep between eth_getLogs chunks, to go easier on a shared RPC node (default: 0)")
     parser.add_argument("--state-collection", default=DEFAULT_STATE_COLLECTION,
                         help="mongo collection holding the resume cursor (default: {0})".format(DEFAULT_STATE_COLLECTION))
     parser.add_argument("--reset-state", action="store_true",
@@ -343,6 +345,9 @@ def main():
             )
 
         start = stop + 1
+
+        if args.delay and start <= to_block:
+            time.sleep(args.delay)
 
     elapsed = time.time() - started
     if not args.dry_run:
