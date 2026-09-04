@@ -55,6 +55,7 @@ import time
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from pymongo.errors import AutoReconnect
 from web3 import Web3
 
 from indexer.tasks import StableIndexerTasks
@@ -154,18 +155,37 @@ def block_timestamp(connection_manager, cache, block_number):
     return cache[block_number]
 
 
+def with_mongo_retries(what, fn, retries=5):
+    """Run fn() with retries on transient replica-set errors (step-down / election
+    mid-write -> AutoReconnect / NotPrimaryError). All mongo writes here are
+    upserts, so redoing one after a failed attempt is safe."""
+    attempt = 0
+    while True:
+        try:
+            return fn()
+        except AutoReconnect as exc:
+            attempt += 1
+            if attempt > retries:
+                raise
+            wait = min(30, 2 ** attempt)
+            log.warning(
+                "{0} failed ({1}); retry {2}/{3} in {4}s".format(what, exc, attempt, retries, wait)
+            )
+            time.sleep(wait)
+
+
 def load_state(collection):
-    return collection.find_one({"_id": STATE_DOC_ID})
+    return with_mongo_retries("load resume cursor", lambda: collection.find_one({"_id": STATE_DOC_ID}))
 
 
 def save_state(collection, **fields):
     now = datetime.datetime.now(LOCAL_TIMEZONE)
     fields["updatedAt"] = now
-    collection.update_one(
+    with_mongo_retries("save resume cursor", lambda: collection.update_one(
         {"_id": STATE_DOC_ID},
         {"$set": fields, "$setOnInsert": {"createdAt": now}},
         upsert=True,
-    )
+    ))
 
 
 def fetch_logs(web3, addresses, start, end, chunk, min_chunk):
@@ -203,8 +223,14 @@ def fetch_logs(web3, addresses, start, end, chunk, min_chunk):
             raise
 
 
-def route_log(scanner, connection_manager, ts_cache, raw_log, dry_run):
-    """Decode one log and hand it to the same handler the live indexer uses."""
+def route_log(scanner, connection_manager, ts_cache, raw_log, dry_run, mongo_retries=5):
+    """Decode one log and hand it to the same handler the live indexer uses.
+
+    ``mongo_retries`` absorbs transient replica-set hiccups (a step-down / election
+    mid-write raises AutoReconnect / NotPrimaryError) so they don't kill an
+    otherwise-healthy, hours-long unattended run. Writes are upserts on
+    ``id_event``, so redoing one after a failed attempt is safe.
+    """
 
     address = raw_log["address"].lower()
     decoder = scanner.contracts_log_decoder.get(address)
@@ -237,7 +263,8 @@ def route_log(scanner, connection_manager, ts_cache, raw_log, dry_run):
         "from": None,
         "logs": [raw_log],
     }
-    scanner.process_logs(fake_raw_tx)
+    what = "mongo write for {0} {1}:{2}".format(event_name, fake_raw_tx["hash"], raw_log["logIndex"])
+    with_mongo_retries(what, lambda: scanner.process_logs(fake_raw_tx), retries=mongo_retries)
     return event_name
 
 
