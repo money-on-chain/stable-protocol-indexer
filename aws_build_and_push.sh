@@ -73,8 +73,9 @@ docker image build -t $IMAGE_NAME -f Dockerfile --build-arg CONFIG=$CONFIG_FILE 
 
 echo "Build done!"
 
-# login into aws ecr
-$(aws ecr get-login --no-include-email --region $AWS_REGION)
+# login into aws ecr (get-login was removed in AWS CLI v2)
+aws ecr get-login-password --region $AWS_REGION | \
+    docker login --username AWS --password-stdin $AWS_ID.dkr.ecr.$AWS_REGION.amazonaws.com
 
 echo "Logging to AWS done!"
 
