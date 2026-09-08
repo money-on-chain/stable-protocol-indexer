@@ -127,16 +127,6 @@ class ScanLogsTransactions:
                 self.contracts_loaded['VotingMachine'].sc
             )
 
-            if 'TasksRunner' in self.contracts_addresses:
-                contracts_log_decoder[self.contracts_addresses['TasksRunner'].lower()] = LogDecoder(
-                    self.contracts_loaded['TasksRunner'].sc
-                )
-
-            if 'TaskTriggerOrder' in self.contracts_addresses:
-                contracts_log_decoder[self.contracts_addresses['TaskTriggerOrder'].lower()] = LogDecoder(
-                    self.contracts_loaded['TaskTriggerOrder'].sc
-                )
-
         # OMOC decentralized oracles
         if 'OracleManager' in self.contracts_addresses:
 
@@ -148,6 +138,20 @@ class ScanLogsTransactions:
                 contracts_log_decoder[cp_address.lower()] = LogDecoder(
                     self.contracts_loaded['CoinPairPrice'][cp_index].sc
                 )
+
+        # TasksRunner / TaskTriggerOrder: registered last and merged, because the
+        # OMOC deployment also lists TasksRunner in OracleManager as a coin pair,
+        # so its address already carries a CoinPairPrice decoder above. Merge the
+        # topic maps so both ABIs' events decode from the shared address instead of
+        # the last registration winning.
+        for key in ('TasksRunner', 'TaskTriggerOrder'):
+            if key in self.contracts_addresses:
+                addr = self.contracts_addresses[key].lower()
+                extra = LogDecoder(self.contracts_loaded[key].sc)
+                if addr in contracts_log_decoder:
+                    contracts_log_decoder[addr].topic_map.update(extra.topic_map)
+                else:
+                    contracts_log_decoder[addr] = extra
 
         return contracts_log_decoder
 
@@ -343,24 +347,6 @@ class ScanLogsTransactions:
                     self.block_info)
             }
 
-            if 'TasksRunner' in self.contracts_addresses:
-                d_event[self.contracts_addresses['TasksRunner'].lower()] = {
-                    "TaskExecuted": EventOMOCTasksRunnerTaskExecuted(
-                        self.options,
-                        self.connection_helper,
-                        self.filter_contracts_addresses,
-                        self.block_info)
-                }
-
-            if 'TaskTriggerOrder' in self.contracts_addresses:
-                d_event[self.contracts_addresses['TaskTriggerOrder'].lower()] = {
-                    "TriggerOrdersReverted": EventOMOCTaskTriggerOrderTriggerOrdersReverted(
-                        self.options,
-                        self.connection_helper,
-                        self.filter_contracts_addresses,
-                        self.block_info)
-                }
-
         # OMOC decentralized oracles
         if 'OracleManager' in self.contracts_addresses:
 
@@ -438,6 +424,27 @@ class ScanLogsTransactions:
                         coin_pair,
                         cp_address)
                 }
+
+        # TasksRunner / TaskTriggerOrder: registered last and merged into whatever
+        # is already mapped for the address. TasksRunner is also listed in
+        # OracleManager as a coin pair, so its address already holds the
+        # CoinPairPrice handlers (NewRound / OracleRewardTransfer, which it does
+        # emit as a RoundManager); this just adds TaskExecuted on top.
+        if 'TasksRunner' in self.contracts_addresses:
+            d_event.setdefault(self.contracts_addresses['TasksRunner'].lower(), {})["TaskExecuted"] = \
+                EventOMOCTasksRunnerTaskExecuted(
+                    self.options,
+                    self.connection_helper,
+                    self.filter_contracts_addresses,
+                    self.block_info)
+
+        if 'TaskTriggerOrder' in self.contracts_addresses:
+            d_event.setdefault(self.contracts_addresses['TaskTriggerOrder'].lower(), {})["TriggerOrdersReverted"] = \
+                EventOMOCTaskTriggerOrderTriggerOrdersReverted(
+                    self.options,
+                    self.connection_helper,
+                    self.filter_contracts_addresses,
+                    self.block_info)
 
         return d_event
 
