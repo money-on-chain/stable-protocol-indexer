@@ -806,7 +806,7 @@ class EventOMOCIncentiveV2ClaimOK(BaseEvent):
 
         # remove old document with only hash as id and replace with id_event as unique id
         remove_query = {"hash": d_event["hash"], "id_event": {"$exists": False}}
-        if collection.find(remove_query):
+        if collection.count_documents(remove_query, limit=1):
             collection.delete_many(remove_query)
 
         collection.find_one_and_update(
@@ -844,7 +844,7 @@ class EventOMOCVestingFactoryVestingCreated(BaseEvent):
 
         # remove old document with only hash as id and replace with id_event as unique id
         remove_query = {"hash": d_event["hash"], "id_event": {"$exists": False}}
-        if collection.find(remove_query):
+        if collection.count_documents(remove_query, limit=1):
             collection.delete_many(remove_query)
 
         collection.find_one_and_update(
@@ -884,7 +884,7 @@ class EventOMOCDelayMachinePaymentCancel(BaseEvent):
 
         # remove old document with only hash as id and replace with id_event as unique id
         remove_query = {"hash": d_event["hash"], "id_event": {"$exists": False}}
-        if collection.find(remove_query):
+        if collection.count_documents(remove_query, limit=1):
             collection.delete_many(remove_query)
 
         collection.find_one_and_update(
@@ -945,7 +945,7 @@ class EventOMOCDelayMachinePaymentDeposit(BaseEvent):
 
         # remove old document with only hash as id and replace with id_event as unique id
         remove_query = {"hash": d_event["hash"], "id_event": {"$exists": False}}
-        if collection.find(remove_query):
+        if collection.count_documents(remove_query, limit=1):
             collection.delete_many(remove_query)
 
         collection.find_one_and_update(
@@ -1006,7 +1006,7 @@ class EventOMOCDelayMachinePaymentWithdraw(BaseEvent):
 
         # remove old document with only hash as id and replace with id_event as unique id
         remove_query = {"hash": d_event["hash"], "id_event": {"$exists": False}}
-        if collection.find(remove_query):
+        if collection.count_documents(remove_query, limit=1):
             collection.delete_many(remove_query)
 
         collection.find_one_and_update(
@@ -1067,7 +1067,7 @@ class EventOMOCSupportersAddStake(BaseEvent):
 
         # remove old document with only hash as id and replace with id_event as unique id
         remove_query = {"hash": d_event["hash"], "id_event": {"$exists": False}}
-        if collection.find(remove_query):
+        if collection.count_documents(remove_query, limit=1):
             collection.delete_many(remove_query)
 
         collection.find_one_and_update(
@@ -1126,7 +1126,7 @@ class EventOMOCSupportersCancelEarnings(BaseEvent):
 
         # remove old document with only hash as id and replace with id_event as unique id
         remove_query = {"hash": d_event["hash"], "id_event": {"$exists": False}}
-        if collection.find(remove_query):
+        if collection.count_documents(remove_query, limit=1):
             collection.delete_many(remove_query)
 
         collection.find_one_and_update(
@@ -1165,7 +1165,7 @@ class EventOMOCSupportersPayEarnings(BaseEvent):
 
         # remove old document with only hash as id and replace with id_event as unique id
         remove_query = {"hash": d_event["hash"], "id_event": {"$exists": False}}
-        if collection.find(remove_query):
+        if collection.count_documents(remove_query, limit=1):
             collection.delete_many(remove_query)
 
         collection.find_one_and_update(
@@ -1210,7 +1210,7 @@ class EventOMOCSupportersWithdraw(BaseEvent):
 
         # remove old document with only hash as id and replace with id_event as unique id
         remove_query = {"hash": d_event["hash"], "id_event": {"$exists": False}}
-        if collection.find(remove_query):
+        if collection.count_documents(remove_query, limit=1):
             collection.delete_many(remove_query)
 
         collection.find_one_and_update(
@@ -1273,7 +1273,7 @@ class EventOMOCSupportersWithdrawStake(BaseEvent):
 
         # remove old document with only hash as id and replace with id_event as unique id
         remove_query = {"hash": d_event["hash"], "id_event": {"$exists": False}}
-        if collection.find(remove_query):
+        if collection.count_documents(remove_query, limit=1):
             collection.delete_many(remove_query)
 
         collection.find_one_and_update(
@@ -1334,7 +1334,7 @@ class EventOMOCVotingMachinePreVoteEvent(BaseEvent):
 
         # remove old document with only hash as id and replace with id_event as unique id
         remove_query = {"hash": d_event["hash"], "id_event": {"$exists": False}}
-        if collection.find(remove_query):
+        if collection.count_documents(remove_query, limit=1):
             collection.delete_many(remove_query)
 
         collection.find_one_and_update(
@@ -1375,7 +1375,7 @@ class EventOMOCVotingMachineVoteEvent(BaseEvent):
 
         # remove old document with only hash as id
         remove_query = {"hash": d_event["hash"], "id_event": {"$exists": False}}
-        if collection.find(remove_query):
+        if collection.count_documents(remove_query, limit=1):
             collection.delete_many(remove_query)
 
         collection.find_one_and_update(
@@ -1414,7 +1414,7 @@ class EventOMOCVotingMachinePreVoteStepEvent(BaseEvent):
 
         # remove old document with only hash as id and replace with id_event as unique id
         remove_query = {"hash": d_event["hash"], "id_event": {"$exists": False}}
-        if collection.find(remove_query):
+        if collection.count_documents(remove_query, limit=1):
             collection.delete_many(remove_query)
 
         collection.find_one_and_update(
@@ -1453,7 +1453,7 @@ class EventOMOCVotingMachineVoteStepEvent(BaseEvent):
 
         # remove old document with only hash as id and replace with id_event as unique id
         remove_query = {"hash": d_event["hash"], "id_event": {"$exists": False}}
-        if collection.find(remove_query):
+        if collection.count_documents(remove_query, limit=1):
             collection.delete_many(remove_query)
 
         collection.find_one_and_update(
@@ -1492,7 +1492,7 @@ class EventOMOCVotingMachineAcceptedStepEvent(BaseEvent):
 
         # remove old document with only hash as id and replace with id_event as unique id
         remove_query = {"hash": d_event["hash"], "id_event": {"$exists": False}}
-        if collection.find(remove_query):
+        if collection.count_documents(remove_query, limit=1):
             collection.delete_many(remove_query)
 
         collection.find_one_and_update(
@@ -1530,7 +1530,7 @@ class EventOMOCVotingMachineUnregisterEvent(BaseEvent):
 
         # remove old document with only hash as id and replace with id_event as unique id
         remove_query = {"hash": d_event["hash"], "id_event": {"$exists": False}}
-        if collection.find(remove_query):
+        if collection.count_documents(remove_query, limit=1):
             collection.delete_many(remove_query)
 
         collection.find_one_and_update(
@@ -1566,7 +1566,7 @@ class EventOMOCOracleManagerOracleRegistered(BaseEvent):
         d_event["lastUpdatedAt"] = datetime.datetime.now()
 
         remove_query = {"hash": d_event["hash"], "id_event": {"$exists": False}}
-        if collection.find(remove_query):
+        if collection.count_documents(remove_query, limit=1):
             collection.delete_many(remove_query)
 
         collection.find_one_and_update(
@@ -1602,7 +1602,7 @@ class EventOMOCOracleManagerOracleStakeAdded(BaseEvent):
         d_event["lastUpdatedAt"] = datetime.datetime.now()
 
         remove_query = {"hash": d_event["hash"], "id_event": {"$exists": False}}
-        if collection.find(remove_query):
+        if collection.count_documents(remove_query, limit=1):
             collection.delete_many(remove_query)
 
         collection.find_one_and_update(
@@ -1638,7 +1638,7 @@ class EventOMOCOracleManagerOracleSubscribed(BaseEvent):
         d_event["lastUpdatedAt"] = datetime.datetime.now()
 
         remove_query = {"hash": d_event["hash"], "id_event": {"$exists": False}}
-        if collection.find(remove_query):
+        if collection.count_documents(remove_query, limit=1):
             collection.delete_many(remove_query)
 
         collection.find_one_and_update(
@@ -1674,7 +1674,7 @@ class EventOMOCOracleManagerOracleUnsubscribed(BaseEvent):
         d_event["lastUpdatedAt"] = datetime.datetime.now()
 
         remove_query = {"hash": d_event["hash"], "id_event": {"$exists": False}}
-        if collection.find(remove_query):
+        if collection.count_documents(remove_query, limit=1):
             collection.delete_many(remove_query)
 
         collection.find_one_and_update(
@@ -1708,7 +1708,7 @@ class EventOMOCOracleManagerOracleRemoved(BaseEvent):
         d_event["lastUpdatedAt"] = datetime.datetime.now()
 
         remove_query = {"hash": d_event["hash"], "id_event": {"$exists": False}}
-        if collection.find(remove_query):
+        if collection.count_documents(remove_query, limit=1):
             collection.delete_many(remove_query)
 
         collection.find_one_and_update(
@@ -1766,7 +1766,7 @@ class EventOMOCCoinPairPricePricePublished(BaseCoinPairPriceEvent):
         d_event["lastUpdatedAt"] = datetime.datetime.now()
 
         remove_query = {"hash": d_event["hash"], "id_event": {"$exists": False}}
-        if collection.find(remove_query):
+        if collection.count_documents(remove_query, limit=1):
             collection.delete_many(remove_query)
 
         collection.find_one_and_update(
@@ -1805,7 +1805,7 @@ class EventOMOCCoinPairPriceEmergencyPricePublished(BaseCoinPairPriceEvent):
         d_event["lastUpdatedAt"] = datetime.datetime.now()
 
         remove_query = {"hash": d_event["hash"], "id_event": {"$exists": False}}
-        if collection.find(remove_query):
+        if collection.count_documents(remove_query, limit=1):
             collection.delete_many(remove_query)
 
         collection.find_one_and_update(
@@ -1843,7 +1843,7 @@ class EventOMOCCoinPairPriceForcedPriceQueryModeSet(BaseCoinPairPriceEvent):
         d_event["lastUpdatedAt"] = datetime.datetime.now()
 
         remove_query = {"hash": d_event["hash"], "id_event": {"$exists": False}}
-        if collection.find(remove_query):
+        if collection.count_documents(remove_query, limit=1):
             collection.delete_many(remove_query)
 
         collection.find_one_and_update(
@@ -1883,7 +1883,7 @@ class EventOMOCCoinPairPriceOracleRewardTransfer(BaseCoinPairPriceEvent):
         d_event["lastUpdatedAt"] = datetime.datetime.now()
 
         remove_query = {"hash": d_event["hash"], "id_event": {"$exists": False}}
-        if collection.find(remove_query):
+        if collection.count_documents(remove_query, limit=1):
             collection.delete_many(remove_query)
 
         collection.find_one_and_update(
@@ -1927,7 +1927,7 @@ class EventOMOCCoinPairPriceNewRound(BaseCoinPairPriceEvent):
         d_event["lastUpdatedAt"] = datetime.datetime.now()
 
         remove_query = {"hash": d_event["hash"], "id_event": {"$exists": False}}
-        if collection.find(remove_query):
+        if collection.count_documents(remove_query, limit=1):
             collection.delete_many(remove_query)
 
         collection.find_one_and_update(
@@ -1966,7 +1966,7 @@ class EventOMOCCoinPairPriceOracleAutoUnsubscribed(BaseCoinPairPriceEvent):
         d_event["lastUpdatedAt"] = datetime.datetime.now()
 
         remove_query = {"hash": d_event["hash"], "id_event": {"$exists": False}}
-        if collection.find(remove_query):
+        if collection.count_documents(remove_query, limit=1):
             collection.delete_many(remove_query)
 
         collection.find_one_and_update(
@@ -2013,7 +2013,7 @@ class EventOMOCTasksRunnerTaskExecuted(BaseEvent):
         d_event["lastUpdatedAt"] = datetime.datetime.now()
 
         remove_query = {"hash": d_event["hash"], "id_event": {"$exists": False}}
-        if collection.find(remove_query):
+        if collection.count_documents(remove_query, limit=1):
             collection.delete_many(remove_query)
 
         collection.find_one_and_update(
@@ -2051,7 +2051,7 @@ class EventOMOCTaskTriggerOrderTriggerOrdersReverted(BaseEvent):
         d_event["lastUpdatedAt"] = datetime.datetime.now()
 
         remove_query = {"hash": d_event["hash"], "id_event": {"$exists": False}}
-        if collection.find(remove_query):
+        if collection.count_documents(remove_query, limit=1):
             collection.delete_many(remove_query)
 
         collection.find_one_and_update(
