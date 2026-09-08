@@ -29,7 +29,8 @@ from .contracts import Multicall2, \
     OMOCVotingMachine, \
     OMOCOracleManager, \
     OMOCCoinPairPrice, \
-    OMOCTasksRunner
+    OMOCTasksRunner, \
+    OMOCTaskTriggerOrder
 from .scan_raw_transactions import ScanRawTxs
 from .scan_logs_transactions import ScanLogsTransactions
 from .scan_transactions_status import ScanTxStatus
@@ -224,6 +225,14 @@ class StableIndexerTasks(TasksManager):
                 self.connection_helper.connection_manager,
                 contract_address=self.config['addresses']['TasksRunner'])
             self.contracts_addresses['TasksRunner'] = self.contracts_loaded["TasksRunner"].address().lower()
+
+        # TaskTriggerOrder (optional): a mocFlow task run by TasksRunner, address comes from config
+        if self.config['addresses'].get('TaskTriggerOrder'):
+            log.info("TaskTriggerOrder using address: {0}".format(self.config['addresses']['TaskTriggerOrder'].lower()))
+            self.contracts_loaded["TaskTriggerOrder"] = OMOCTaskTriggerOrder(
+                self.connection_helper.connection_manager,
+                contract_address=self.config['addresses']['TaskTriggerOrder'])
+            self.contracts_addresses['TaskTriggerOrder'] = self.contracts_loaded["TaskTriggerOrder"].address().lower()
 
         # DelayMachine
         log.info("DelayMachine using address: {0}".format(self.contracts_addresses['DelayMachine'].lower()))

@@ -32,6 +32,7 @@ Collections written:
 - `event_IncentiveV2_ClaimOK`
 - `event_VotingMachine_*`
 - `event_TasksRunner_TaskExecuted` (only when `addresses.TasksRunner` is set)
+- `event_TaskTriggerOrder_TriggerOrdersReverted` (only when `addresses.TaskTriggerOrder` is set)
 
 Every write is an upsert on `id_event` (`{txHash}:{logIndex}`), so it is
 **idempotent**: safe to re-run, safe to overlap with the live indexer, safe to
@@ -68,10 +69,11 @@ resume; pass it to force a start point (it wins over the cursor).
 DelayMachine / Supporters / VestingFactory / VotingMachine / OracleManager and
 every `CoinPairPrice` instance.
 
-`addresses.IncentiveV2` and `addresses.TasksRunner` are **optional** explicit
-addresses (neither has a published registry constant). Set `TasksRunner` to
-also backfill / index `TasksRunner.TaskExecuted`; leave it out and that contract
-is simply skipped.
+`addresses.IncentiveV2`, `addresses.TasksRunner` and `addresses.TaskTriggerOrder`
+are **optional** explicit addresses (none has a published registry constant). Set
+`TasksRunner` to also index `TasksRunner.TaskExecuted`, and `TaskTriggerOrder` to
+index the mocFlow `TaskTriggerOrder.TriggerOrdersReverted` failure log; leave one
+out and that contract is simply skipped.
 
 These env vars override the file (same names as `app_run_indexer.py`), which is
 how you feed it on ECS:

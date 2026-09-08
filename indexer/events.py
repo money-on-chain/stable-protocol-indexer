@@ -2025,3 +2025,41 @@ class EventOMOCTasksRunnerTaskExecuted(BaseEvent):
         log.info(d_event)
 
         return d_event, parsed
+
+
+class EventOMOCTaskTriggerOrderTriggerOrdersReverted(BaseEvent):
+    """ OMOC mocFlow TaskTriggerOrder.TriggerOrdersReverted: emitted only when the
+    reverse-auction triggerOrders() call reverts (reason set for Error(string),
+    data set for a low-level revert). """
+
+    def parse_event_and_save(self, parsed_receipt, decoded_event):
+
+        parsed = self.parse_event(parsed_receipt, decoded_event)
+
+        collection = self.connection_helper.mongo_collection('event_TaskTriggerOrder_TriggerOrdersReverted')
+
+        tx_hash = parsed_receipt['hash']
+        id_event = "{0}:{1}".format(tx_hash, parsed_receipt['logIndex'])
+
+        d_event = dict()
+        d_event["hash"] = tx_hash
+        d_event["id_event"] = id_event
+        d_event["blockNumber"] = int(parsed_receipt["blockNumber"])
+        d_event["reason"] = parsed["reason"]
+        d_event["data"] = bytes32_to_hex(parsed["data"])
+        d_event["createdAt"] = parsed_receipt["createdAt"]
+        d_event["lastUpdatedAt"] = datetime.datetime.now()
+
+        remove_query = {"hash": d_event["hash"], "id_event": {"$exists": False}}
+        if collection.find(remove_query):
+            collection.delete_many(remove_query)
+
+        collection.find_one_and_update(
+            {"id_event": d_event["id_event"]},
+            {"$set": d_event},
+            upsert=True)
+
+        log.info("Event :: TaskTriggerOrder_TriggerOrdersReverted :: {0}".format(d_event["id_event"]))
+        log.info(d_event)
+
+        return d_event, parsed
