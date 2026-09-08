@@ -37,7 +37,8 @@ from .events import EventMoCExchangeRiskProMint, \
     EventOMOCCoinPairPriceForcedPriceQueryModeSet, \
     EventOMOCCoinPairPriceOracleRewardTransfer, \
     EventOMOCCoinPairPriceNewRound, \
-    EventOMOCCoinPairPriceOracleAutoUnsubscribed
+    EventOMOCCoinPairPriceOracleAutoUnsubscribed, \
+    EventOMOCTasksRunnerTaskExecuted
 
 from .base.decoder import LogDecoder, UnknownEvent
 
@@ -124,6 +125,11 @@ class ScanLogsTransactions:
             contracts_log_decoder[self.contracts_addresses['VotingMachine'].lower()] = LogDecoder(
                 self.contracts_loaded['VotingMachine'].sc
             )
+
+            if 'TasksRunner' in self.contracts_addresses:
+                contracts_log_decoder[self.contracts_addresses['TasksRunner'].lower()] = LogDecoder(
+                    self.contracts_loaded['TasksRunner'].sc
+                )
 
         # OMOC decentralized oracles
         if 'OracleManager' in self.contracts_addresses:
@@ -330,6 +336,15 @@ class ScanLogsTransactions:
                     self.filter_contracts_addresses,
                     self.block_info)
             }
+
+            if 'TasksRunner' in self.contracts_addresses:
+                d_event[self.contracts_addresses['TasksRunner'].lower()] = {
+                    "TaskExecuted": EventOMOCTasksRunnerTaskExecuted(
+                        self.options,
+                        self.connection_helper,
+                        self.filter_contracts_addresses,
+                        self.block_info)
+                }
 
         # OMOC decentralized oracles
         if 'OracleManager' in self.contracts_addresses:

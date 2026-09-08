@@ -31,6 +31,7 @@ Collections written:
 - `event_VestingFactory_VestingCreated`
 - `event_IncentiveV2_ClaimOK`
 - `event_VotingMachine_*`
+- `event_TasksRunner_TaskExecuted` (only when `addresses.TasksRunner` is set)
 
 Every write is an upsert on `id_event` (`{txHash}:{logIndex}`), so it is
 **idempotent**: safe to re-run, safe to overlap with the live indexer, safe to
@@ -66,6 +67,11 @@ resume; pass it to force a start point (it wins over the cursor).
 `addresses.IRegistry` or the script exits — that is how it discovers the
 DelayMachine / Supporters / VestingFactory / VotingMachine / OracleManager and
 every `CoinPairPrice` instance.
+
+`addresses.IncentiveV2` and `addresses.TasksRunner` are **optional** explicit
+addresses (neither has a published registry constant). Set `TasksRunner` to
+also backfill / index `TasksRunner.TaskExecuted`; leave it out and that contract
+is simply skipped.
 
 These env vars override the file (same names as `app_run_indexer.py`), which is
 how you feed it on ECS:

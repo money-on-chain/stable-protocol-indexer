@@ -1979,3 +1979,49 @@ class EventOMOCCoinPairPriceOracleAutoUnsubscribed(BaseCoinPairPriceEvent):
         log.info(d_event)
 
         return d_event, parsed
+
+
+class EventOMOCTasksRunnerTaskExecuted(BaseEvent):
+    """ OMOC TasksRunner.TaskExecuted: one log per task run in a batch (keeper metadata) """
+
+    def parse_event(self, parsed_receipt, decoded_event):
+        """ Like BaseEvent.parse_event, but the event's own ``blockNumber`` param wins
+        over the colliding receipt key instead of raising. The receipt block is still
+        read straight from ``parsed_receipt`` below. """
+        fields = {field['name']: field['value'] for field in decoded_event}
+        return {**parsed_receipt, **fields}
+
+    def parse_event_and_save(self, parsed_receipt, decoded_event):
+
+        parsed = self.parse_event(parsed_receipt, decoded_event)
+
+        collection = self.connection_helper.mongo_collection('event_TasksRunner_TaskExecuted')
+
+        tx_hash = parsed_receipt['hash']
+        id_event = "{0}:{1}".format(tx_hash, parsed_receipt['logIndex'])
+
+        d_event = dict()
+        d_event["hash"] = tx_hash
+        d_event["id_event"] = id_event
+        d_event["blockNumber"] = int(parsed_receipt["blockNumber"])
+        d_event["sender"] = sanitize_address(parsed["sender"]).lower()
+        d_event["votedOracle"] = sanitize_address(parsed["votedOracle"]).lower()
+        d_event["task"] = sanitize_address(parsed["task"]).lower()
+        d_event["taskBlockNumber"] = str(parsed["blockNumber"])
+        d_event["success"] = bool(parsed["success"])
+        d_event["createdAt"] = parsed_receipt["createdAt"]
+        d_event["lastUpdatedAt"] = datetime.datetime.now()
+
+        remove_query = {"hash": d_event["hash"], "id_event": {"$exists": False}}
+        if collection.find(remove_query):
+            collection.delete_many(remove_query)
+
+        collection.find_one_and_update(
+            {"id_event": d_event["id_event"]},
+            {"$set": d_event},
+            upsert=True)
+
+        log.info("Event :: TasksRunner_TaskExecuted :: {0}".format(d_event["id_event"]))
+        log.info(d_event)
+
+        return d_event, parsed

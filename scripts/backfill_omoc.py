@@ -14,8 +14,9 @@ This script instead pulls OMOC logs directly with ``eth_getLogs`` and feeds them
 through the SAME decoders / event handlers the live indexer uses. It only ever
 writes the new OMOC collections (``event_OracleManager_*``, ``event_CoinPairPrice_*``,
 ``event_DelayMachine_*``, ``event_Supporters_*``, ``event_VestingFactory_VestingCreated``,
-``event_IncentiveV2_ClaimOK``, ``event_VotingMachine_*`` and ``omoc_operations``) and
-never touches ``raw_transactions`` / ``moc_indexer`` / ``operations`` / ``Transaction``.
+``event_IncentiveV2_ClaimOK``, ``event_VotingMachine_*``, ``event_TasksRunner_TaskExecuted``
+and ``omoc_operations``) and never touches ``raw_transactions`` / ``moc_indexer`` /
+``operations`` / ``Transaction``.
 
 Every write is an upsert on ``id_event`` (``{txHash}:{logIndex}``) so it is
 idempotent: safe to re-run, safe to overlap with the live indexer, safe to stop
@@ -74,6 +75,7 @@ OMOC_SCALAR_KEYS = [
     "VotingMachine",
     "IncentiveV2",
     "OracleManager",
+    "TasksRunner",
 ]
 
 RANGE_ERROR_HINTS = ("limit", "range", "too many", "10000", "query returned more", "more than")
