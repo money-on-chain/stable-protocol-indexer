@@ -80,16 +80,38 @@ OMOC_INDEX_SPECS = [
 def _create_indexes(mongo_collection, specs, label):
     """`mongo_collection` is ConnectionHelperMongo.mongo_collection (or any
     callable(name) -> pymongo Collection)."""
+    created = 0
     for collection_name, keys, options in specs:
+        collection = mongo_collection(collection_name)
         try:
-            mongo_collection(collection_name).create_index(keys, **options)
+            # Match by key pattern, not name: index_information() keys are index
+            # NAMES (e.g. the auto-generated "transactionHash_1_address_1_event_1"),
+            # which can collide with a differently-optioned index someone already
+            # created by hand (unique, collation, ...) under that exact same
+            # default name. A naive create_index() then raises
+            # IndexOptionsConflict (code 85) even though an index on these same
+            # keys already exists and already serves the query just fine - so
+            # check by key first instead of relying on create_index()'s own
+            # name-based conflict detection.
+            target_key = list(keys)
+            exists = any(
+                info.get("key") == target_key
+                for info in collection.index_information().values()
+            )
+            if exists:
+                continue
+            collection.create_index(keys, **options)
+            created += 1
         except Exception as exc:
+            # Best-effort: a lingering name conflict we didn't catch above, or a
+            # mongo user without index-management rights (e.g. a read replica),
+            # should not block startup.
             log.warning(
                 "Could not ensure index {0} on {1}: {2}: {3}".format(
                     keys, collection_name, type(exc).__name__, exc
                 )
             )
-    log.info("ensured {0} {1} indexes".format(len(specs), label))
+    log.info("ensured {0} {1} indexes ({2} newly created)".format(len(specs), label, created))
 
 
 def ensure_core_indexes(mongo_collection):
