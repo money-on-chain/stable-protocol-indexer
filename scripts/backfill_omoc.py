@@ -81,43 +81,6 @@ OMOC_SCALAR_KEYS = [
 
 RANGE_ERROR_HINTS = ("limit", "range", "too many", "10000", "query returned more", "more than")
 
-# every collection an OMOC event handler may write. Indexed once at startup so the
-# per-event upsert ({id_event}) and the legacy hash cleanup ({hash}) stay
-# index-backed; without these, insert throughput decays as each collection grows
-# (each write would full-scan the whole collection twice -> O(n^2) over a backfill).
-OMOC_EVENT_COLLECTIONS = [
-    "event_IncentiveV2_ClaimOK",
-    "event_VestingFactory_VestingCreated",
-    "event_DelayMachine_PaymentCancel",
-    "event_DelayMachine_PaymentDeposit",
-    "event_DelayMachine_PaymentWithdraw",
-    "event_Supporters_AddStake",
-    "event_Supporters_CancelEarnings",
-    "event_Supporters_PayEarnings",
-    "event_Supporters_Withdraw",
-    "event_Supporters_WithdrawStake",
-    "event_VotingMachine_PreVoteEvent",
-    "event_VotingMachine_VoteEvent",
-    "event_VotingMachine_PreVoteStepEvent",
-    "event_VotingMachine_VoteStepEvent",
-    "event_VotingMachine_AcceptedStepEvent",
-    "event_VotingMachine_UnregisterEvent",
-    "event_OracleManager_OracleRegistered",
-    "event_OracleManager_OracleStakeAdded",
-    "event_OracleManager_OracleSubscribed",
-    "event_OracleManager_OracleUnsubscribed",
-    "event_OracleManager_OracleRemoved",
-    "event_CoinPairPrice_PricePublished",
-    "event_CoinPairPrice_EmergencyPricePublished",
-    "event_CoinPairPrice_ForcedPriceQueryModeSet",
-    "event_CoinPairPrice_OracleRewardTransfer",
-    "event_CoinPairPrice_NewRound",
-    "event_CoinPairPrice_OracleAutoUnsubscribed",
-    "event_TasksRunner_TaskExecuted",
-    "event_TaskTriggerOrder_TriggerOrdersReverted",
-    "omoc_operations",
-]
-
 # resume cursor: a single document {_id: "cursor"} in this collection
 DEFAULT_STATE_COLLECTION = "omoc_backfill"
 STATE_DOC_ID = "cursor"
@@ -212,17 +175,6 @@ def with_mongo_retries(what, fn, retries=5):
                 "{0} failed ({1}); retry {2}/{3} in {4}s".format(what, exc, attempt, retries, wait)
             )
             time.sleep(wait)
-
-
-def ensure_indexes(connection_helper):
-    """create_index is idempotent (no-op if present). Makes the per-event upsert
-    (id_event) and the legacy hash cleanup index-backed so insert throughput does
-    not decay as the OMOC collections grow. Also benefits the live indexer."""
-    for name in OMOC_EVENT_COLLECTIONS:
-        collection = connection_helper.mongo_collection(name)
-        with_mongo_retries("index {0}.id_event".format(name), lambda c=collection: c.create_index("id_event"))
-        with_mongo_retries("index {0}.hash".format(name), lambda c=collection: c.create_index("hash"))
-    log.info("ensured id_event / hash indexes on {0} OMOC collections".format(len(OMOC_EVENT_COLLECTIONS)))
 
 
 def load_state(collection):
@@ -359,8 +311,10 @@ def main():
             log.info("{0:16s} {1}  ({2})".format("CoinPairPrice", cp, name))
         return
 
-    if not args.dry_run:
-        ensure_indexes(tasks.connection_helper)
+    # OMOC event collection indexes (id_event / hash) are already ensured at this
+    # point - build_scanner() -> StableIndexerTasks() does it automatically now
+    # that OMOC is confirmed configured, so the live indexer gets the same
+    # self-healing on a fresh deploy without ever needing to run this script.
 
     state_collection = tasks.connection_helper.mongo_collection(args.state_collection)
     if args.reset_state and not args.dry_run:

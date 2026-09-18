@@ -6,6 +6,7 @@ from web3 import Web3
 
 from .base.main import ConnectionHelperMongo
 from .base.token import ERC20Token
+from .base.indexes import ensure_omoc_indexes
 from .tasks_manager import TasksManager
 from .logger import log
 from .contracts import Multicall2, \
@@ -35,7 +36,7 @@ from .scan_raw_transactions import ScanRawTxs
 from .scan_logs_transactions import ScanLogsTransactions
 from .scan_transactions_status import ScanTxStatus
 
-__VERSION__ = '4.0.5'
+__VERSION__ = '4.0.6'
 
 log.info("Starting Protocol Indexer version {0}".format(__VERSION__))
 
@@ -67,6 +68,9 @@ class StableIndexerTasks(TasksManager):
 
         # load contracts
         self.load_contracts()
+
+        if 'IRegistry' in self.contracts_addresses:
+            ensure_omoc_indexes(self.connection_helper.mongo_collection)
 
         # Add tasks
         self.schedule_tasks()

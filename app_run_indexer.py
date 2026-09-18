@@ -2,6 +2,7 @@ import os
 import json
 
 from indexer.tasks import StableIndexerTasks
+from indexer.base.indexes import ensure_core_indexes
 
 
 def options_from_config(filename=None):
@@ -37,4 +38,8 @@ if __name__ == '__main__':
         config['uri'] = os.environ['APP_CONNECTION_URI']
 
     indexer_tasks = StableIndexerTasks(config)
+    # raw_transactions / Transaction are core-indexer-only collections the OMOC
+    # backfill never touches, so this stays out of StableIndexerTasks.__init__
+    # (shared by both) and lives here instead.
+    ensure_core_indexes(indexer_tasks.connection_helper.mongo_collection)
     indexer_tasks.start_loop()
