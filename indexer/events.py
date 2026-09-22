@@ -823,7 +823,14 @@ class EventFastBtcBridgeBitcoinTransferStatusUpdated(BaseEvent):
 # Lending and Borrowing events (MocLendingManager / MocLendingQueue)
 # ---------------------------------------------------------------------------
 
+# lending_user_operations status (same codes as indexer v3)
+TX_STATUS_QUEUE_ERROR = -1  # queued but errored before execution
+TX_STATUS_QUEUED = 0        # waiting in the lending queue
+TX_STATUS_EXECUTED = 1      # executed
+
 LENDING_OPER_TYPE = {0: 'NONE', 1: 'BORROW', 2: 'REMOVE_AC_FROM_VAULT', 3: 'REPAY_WITH_AC'}
+# Final lending event emitted when a queued operation of this type executes
+LENDING_OPER_TYPE_EVENT_NAME = {1: 'Borrow', 2: 'RemoveACfromVault', 3: 'RepayWithAC'}
 
 
 class EventLendingDeposit(BaseEvent):
@@ -871,6 +878,7 @@ class EventLendingDeposit(BaseEvent):
                 "tpToken": d_event["tpToken"],
                 "createdAt": d_event["createdAt"],
                 "lastUpdatedAt": d_event["lastUpdatedAt"],
+                "status": TX_STATUS_EXECUTED,
                 "extra": {
                     "recipient": d_event["recipient"],
                     "tpAmount": d_event["tpAmount"],
@@ -930,6 +938,7 @@ class EventLendingWithdraw(BaseEvent):
                 "tpToken": d_event["tpToken"],
                 "createdAt": d_event["createdAt"],
                 "lastUpdatedAt": d_event["lastUpdatedAt"],
+                "status": TX_STATUS_EXECUTED,
                 "extra": {
                     "recipient": d_event["recipient"],
                     "depositUnits": d_event["depositUnits"],
@@ -989,6 +998,7 @@ class EventLendingAddACtoVault(BaseEvent):
                 "tpToken": d_event["tpToken"],
                 "createdAt": d_event["createdAt"],
                 "lastUpdatedAt": d_event["lastUpdatedAt"],
+                "status": TX_STATUS_EXECUTED,
                 "extra": {
                     "recipient": d_event["recipient"],
                     "mocBucket": d_event["mocBucket"],
@@ -1048,6 +1058,7 @@ class EventLendingRemoveACfromVault(BaseEvent):
                 "tpToken": d_event["tpToken"],
                 "createdAt": d_event["createdAt"],
                 "lastUpdatedAt": d_event["lastUpdatedAt"],
+                "status": TX_STATUS_EXECUTED,
                 "extra": {
                     "recipient": d_event["recipient"],
                     "mocBucket": d_event["mocBucket"],
@@ -1108,6 +1119,7 @@ class EventLendingBorrow(BaseEvent):
                 "tpToken": d_event["tpToken"],
                 "createdAt": d_event["createdAt"],
                 "lastUpdatedAt": d_event["lastUpdatedAt"],
+                "status": TX_STATUS_EXECUTED,
                 "extra": {
                     "recipient": d_event["recipient"],
                     "mocBucket": d_event["mocBucket"],
@@ -1170,6 +1182,7 @@ class EventLendingRepay(BaseEvent):
                 "tpToken": d_event["tpToken"],
                 "createdAt": d_event["createdAt"],
                 "lastUpdatedAt": d_event["lastUpdatedAt"],
+                "status": TX_STATUS_EXECUTED,
                 "extra": {
                     "recipient": d_event["recipient"],
                     "mocBucket": d_event["mocBucket"],
@@ -1233,6 +1246,7 @@ class EventLendingRepayWithAC(BaseEvent):
                 "tpToken": d_event["tpToken"],
                 "createdAt": d_event["createdAt"],
                 "lastUpdatedAt": d_event["lastUpdatedAt"],
+                "status": TX_STATUS_EXECUTED,
                 "extra": {
                     "mocBucket": d_event["mocBucket"],
                     "creditUnits": d_event["creditUnits"],
@@ -1297,6 +1311,7 @@ class EventLendingLiquidate(BaseEvent):
                 "tpToken": d_event["tpToken"],
                 "createdAt": d_event["createdAt"],
                 "lastUpdatedAt": d_event["lastUpdatedAt"],
+                "status": TX_STATUS_EXECUTED,
                 "extra": {
                     "liquidator": d_event["liquidator"],
                     "mocBucket": d_event["mocBucket"],
@@ -1388,6 +1403,38 @@ class EventLendingOperationQueued(BaseEvent):
             {"$set": d_event},
             upsert=True)
 
+        # Pending row in user history. OperationExecuted removes it (the final lending
+        # event writes its own row); OperationError marks it as failed.
+        executed_col = self.connection_helper.mongo_collection('event_Lending_OperationExecuted')
+        if executed_col.find_one({"operId": d_event["operId"]}):
+            log.warning("Event :: Lending_OperationQueued :: operId: {0} Skipping user operation, already executed".format(
+                d_event["operId"]))
+        else:
+            user_ops_col = self.connection_helper.mongo_collection('lending_user_operations')
+            user_ops_col.find_one_and_update(
+                {"id_event": id_event},
+                {"$set": {
+                    "id_event": id_event,
+                    "hash": tx_hash,
+                    "blockNumber": d_event["blockNumber"],
+                    "eventName": LENDING_OPER_TYPE_EVENT_NAME.get(oper_type_int, d_event["operTypeName"]),
+                    "user": d_event["user"],
+                    "tpToken": d_event["tpToken"],
+                    "operId": d_event["operId"],
+                    "createdAt": d_event["createdAt"],
+                    "lastUpdatedAt": d_event["lastUpdatedAt"],
+                    "extra": {
+                        "recipient": d_event["recipient"],
+                        "mocBucket": d_event["mocBucket"],
+                        "operType": d_event["operType"],
+                        "operTypeName": d_event["operTypeName"],
+                        "amount": d_event["amount"],
+                    },
+                },
+                    # only on insert: don't reset a row already marked as error on re-scan
+                    "$setOnInsert": {"status": TX_STATUS_QUEUED}},
+                upsert=True)
+
         log.info("Event :: Lending_OperationQueued :: operId: {0} type: {1}".format(
             d_event["operId"], d_event["operTypeName"]))
         log.info(d_event)
@@ -1425,6 +1472,17 @@ class EventLendingOperationError(BaseEvent):
             {"$set": d_event},
             upsert=True)
 
+        # Mark the pending row in user history as failed
+        user_ops_col = self.connection_helper.mongo_collection('lending_user_operations')
+        user_ops_col.update_one(
+            {"operId": d_event["operId"], "status": TX_STATUS_QUEUED},
+            {"$set": {
+                "status": TX_STATUS_QUEUE_ERROR,
+                "errorHash": tx_hash,
+                "reason": d_event["reason"],
+                "lastUpdatedAt": d_event["lastUpdatedAt"],
+            }})
+
         log.info("Event :: Lending_OperationError :: operId: {0}".format(d_event["operId"]))
         log.info(d_event)
 
@@ -1460,6 +1518,11 @@ class EventLendingOperationExecuted(BaseEvent):
             {"id_event": d_event["id_event"]},
             {"$set": d_event},
             upsert=True)
+
+        # The final lending event (Borrow, RemoveACfromVault, RepayWithAC) in this tx
+        # already has its own row, so drop the pending one
+        user_ops_col = self.connection_helper.mongo_collection('lending_user_operations')
+        user_ops_col.delete_many({"operId": d_event["operId"], "status": TX_STATUS_QUEUED})
 
         log.info("Event :: Lending_OperationExecuted :: operId: {0}".format(d_event["operId"]))
         log.info(d_event)

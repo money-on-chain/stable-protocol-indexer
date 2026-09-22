@@ -177,6 +177,7 @@ class StableIndexerTasks(TasksManager):
         self.connection_helper.create_index(
             'lending_user_operations', [('user', ASCENDING), ('blockNumber', DESCENDING)], unique=False)
         self.connection_helper.create_index('lending_user_operations', [('blockNumber', DESCENDING)], unique=False)
+        self.connection_helper.create_index('lending_user_operations', [('operId', ASCENDING)], unique=False)
 
     def schedule_tasks(self):
 
