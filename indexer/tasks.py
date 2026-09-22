@@ -179,6 +179,31 @@ class StableIndexerTasks(TasksManager):
         self.connection_helper.create_index('lending_user_operations', [('blockNumber', DESCENDING)], unique=False)
         self.connection_helper.create_index('lending_user_operations', [('operId', ASCENDING)], unique=False)
 
+        # Lending event collections: id_event / hash back the indexer's upserts,
+        # blockNumber (alone and paired with each API filter field) backs the
+        # API listings sorted by blockNumber desc.
+        lending_filter_fields = {
+            'event_Lending_Deposit': ['user', 'recipient'],
+            'event_Lending_Withdraw': ['user', 'recipient'],
+            'event_Lending_AddACtoVault': ['user', 'recipient'],
+            'event_Lending_RemoveACfromVault': ['user', 'recipient'],
+            'event_Lending_Borrow': ['user', 'recipient'],
+            'event_Lending_Repay': ['user', 'recipient'],
+            'event_Lending_RepayWithAC': ['user'],
+            'event_Lending_Liquidate': ['user', 'liquidator'],
+            'event_Lending_TPInjection': [],
+            'event_Lending_OperationQueued': ['user', 'recipient'],
+            'event_Lending_OperationError': ['operId'],
+            'event_Lending_OperationExecuted': ['operId'],
+        }
+        for collection_name, filter_fields in lending_filter_fields.items():
+            self.connection_helper.create_index(collection_name, [('id_event', ASCENDING)], unique=False)
+            self.connection_helper.create_index(collection_name, [('hash', ASCENDING)], unique=False)
+            self.connection_helper.create_index(collection_name, [('blockNumber', DESCENDING)], unique=False)
+            for field in filter_fields:
+                self.connection_helper.create_index(
+                    collection_name, [(field, ASCENDING), ('blockNumber', DESCENDING)], unique=False)
+
     def schedule_tasks(self):
 
         log.info("Starting adding indexer tasks...")
