@@ -1,6 +1,12 @@
 
+import os
+import json
+
+from web3 import Web3
+
 from .base.main import ConnectionHelperMongo
 from .base.token import ERC20Token
+from .base.indexes import ensure_omoc_indexes
 from .tasks_manager import TasksManager
 from .logger import log
 from .contracts import Multicall2, \
@@ -16,14 +22,35 @@ from .contracts import Multicall2, \
     MoCInrateRRC20, \
     MoCSettlementRRC20, \
     MoCExchangeRRC20, \
-    FastBtcBridge
+    OMOCIRegistry, \
+    OMOCDelayMachine, \
+    OMOCIncentiveV2, \
+    OMOCSupporters, \
+    OMOCVestingFactory, \
+    OMOCVotingMachine, \
+    OMOCOracleManager, \
+    OMOCCoinPairPrice, \
+    OMOCTasksRunner, \
+    OMOCTaskTriggerOrder
 from .scan_raw_transactions import ScanRawTxs
 from .scan_logs_transactions import ScanLogsTransactions
 from .scan_transactions_status import ScanTxStatus
 
-__VERSION__ = '4.0.4'
+__VERSION__ = '4.0.7'
 
 log.info("Starting Protocol Indexer version {0}".format(__VERSION__))
+
+
+def read_omoc_json_file(filename=None):
+    """ Read Json File """
+
+    if not filename:
+        filename = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'omoc.json')
+
+    with open(filename) as f:
+        options = json.load(f)
+
+    return options
 
 
 class StableIndexerTasks(TasksManager):
@@ -41,6 +68,9 @@ class StableIndexerTasks(TasksManager):
 
         # load contracts
         self.load_contracts()
+
+        if 'IRegistry' in self.contracts_addresses:
+            ensure_omoc_indexes(self.connection_helper.mongo_collection)
 
         # Add tasks
         self.schedule_tasks()
@@ -150,13 +180,129 @@ class StableIndexerTasks(TasksManager):
         self.contracts_loaded["TG"] = ERC20Token(
             self.connection_helper.connection_manager,
             contract_address=self.contracts_addresses['TG'])
-        # FastBTCBridge
-        self.contracts_loaded["FastBtcBridge"] = FastBtcBridge(
-            self.connection_helper.connection_manager,
-            contract_address=self.config['addresses']['FastBtcBridge'])
-        self.contracts_addresses['FastBtcBridge'] = self.config['addresses']['FastBtcBridge']
 
-        self.filter_contracts_addresses = [v.lower() for k, v in self.contracts_addresses.items()]
+        # OMOC (Governance / Staking / Oracles). Only loaded when an IRegistry address is configured
+        if self.config['addresses'].get('IRegistry'):
+            self.load_omoc_contracts()
+
+        self.filter_contracts_addresses = []
+        for k, v in self.contracts_addresses.items():
+            if isinstance(v, list):
+                self.filter_contracts_addresses.extend([a.lower() for a in v])
+            else:
+                self.filter_contracts_addresses.append(v.lower())
+
+    def load_omoc_contracts(self):
+        """ Load OMOC (governance / staking) contracts and resolve their addresses """
+
+        omoc = read_omoc_json_file()
+
+        # IRegistry
+        log.info("IRegistry using address: {0}".format(self.config['addresses']['IRegistry'].lower()))
+        self.contracts_loaded["IRegistry"] = OMOCIRegistry(
+            self.connection_helper.connection_manager,
+            contract_address=self.config['addresses']['IRegistry'])
+        self.contracts_addresses['IRegistry'] = self.contracts_loaded["IRegistry"].address().lower()
+
+        # Getting addresses from Registry
+        self.contracts_addresses['DelayMachine'] = self.contracts_loaded["IRegistry"].sc.functions.getAddress(
+            omoc['RegistryConstants']['MOC_DELAY_MACHINE']).call().lower()
+        self.contracts_addresses['Supporters'] = self.contracts_loaded["IRegistry"].sc.functions.getAddress(
+            omoc['RegistryConstants']['SUPPORTERS_ADDR']).call().lower()
+        self.contracts_addresses['VestingFactory'] = self.contracts_loaded["IRegistry"].sc.functions.getAddress(
+            omoc['RegistryConstants']['MOC_VESTING_MACHINE']).call().lower()
+        self.contracts_addresses['VotingMachine'] = self.contracts_loaded["IRegistry"].sc.functions.getAddress(
+            omoc['RegistryConstants']['MOC_VOTING_MACHINE']).call().lower()
+
+        # IncentiveV2 (optional)
+        if self.config['addresses'].get('IncentiveV2'):
+            log.info("IncentiveV2 using address: {0}".format(self.config['addresses']['IncentiveV2'].lower()))
+            self.contracts_loaded["IncentiveV2"] = OMOCIncentiveV2(
+                self.connection_helper.connection_manager,
+                contract_address=self.config['addresses']['IncentiveV2'])
+            self.contracts_addresses['IncentiveV2'] = self.contracts_loaded["IncentiveV2"].address().lower()
+
+        # TasksRunner (optional): no registry constant published, address comes from config
+        if self.config['addresses'].get('TasksRunner'):
+            log.info("TasksRunner using address: {0}".format(self.config['addresses']['TasksRunner'].lower()))
+            self.contracts_loaded["TasksRunner"] = OMOCTasksRunner(
+                self.connection_helper.connection_manager,
+                contract_address=self.config['addresses']['TasksRunner'])
+            self.contracts_addresses['TasksRunner'] = self.contracts_loaded["TasksRunner"].address().lower()
+
+        # TaskTriggerOrder (optional): a mocFlow task run by TasksRunner, address comes from config
+        if self.config['addresses'].get('TaskTriggerOrder'):
+            log.info("TaskTriggerOrder using address: {0}".format(self.config['addresses']['TaskTriggerOrder'].lower()))
+            self.contracts_loaded["TaskTriggerOrder"] = OMOCTaskTriggerOrder(
+                self.connection_helper.connection_manager,
+                contract_address=self.config['addresses']['TaskTriggerOrder'])
+            self.contracts_addresses['TaskTriggerOrder'] = self.contracts_loaded["TaskTriggerOrder"].address().lower()
+
+        # DelayMachine
+        log.info("DelayMachine using address: {0}".format(self.contracts_addresses['DelayMachine'].lower()))
+        self.contracts_loaded["DelayMachine"] = OMOCDelayMachine(
+            self.connection_helper.connection_manager,
+            contract_address=self.contracts_addresses['DelayMachine'])
+
+        # Supporters
+        log.info("Supporters using address: {0}".format(self.contracts_addresses['Supporters'].lower()))
+        self.contracts_loaded["Supporters"] = OMOCSupporters(
+            self.connection_helper.connection_manager,
+            contract_address=self.contracts_addresses['Supporters'])
+
+        # VestingFactory
+        log.info("VestingFactory using address: {0}".format(self.contracts_addresses['VestingFactory'].lower()))
+        self.contracts_loaded["VestingFactory"] = OMOCVestingFactory(
+            self.connection_helper.connection_manager,
+            contract_address=self.contracts_addresses['VestingFactory'])
+
+        # VotingMachine
+        log.info("VotingMachine using address: {0}".format(self.contracts_addresses['VotingMachine'].lower()))
+        self.contracts_loaded["VotingMachine"] = OMOCVotingMachine(
+            self.connection_helper.connection_manager,
+            contract_address=self.contracts_addresses['VotingMachine'])
+        self.contracts_addresses['VotingMachine'] = self.contracts_loaded["VotingMachine"].address().lower()
+
+        # Decentralized Oracles
+        self.load_omoc_oracle_contracts(omoc)
+
+    def load_omoc_oracle_contracts(self, omoc):
+        """ Load the OracleManager and every registered CoinPairPrice instance """
+
+        # OracleManager
+        oracle_manager_address = self.contracts_loaded["IRegistry"].sc.functions.getAddress(
+            omoc['RegistryConstants']['ORACLE_MANAGER_ADDR']).call().lower()
+        log.info("OracleManager using address: {0}".format(oracle_manager_address))
+        self.contracts_loaded["OracleManager"] = OMOCOracleManager(
+            self.connection_helper.connection_manager,
+            contract_address=oracle_manager_address)
+        self.contracts_addresses['OracleManager'] = oracle_manager_address
+
+        # CoinPairPrice: one contract per registered coin pair
+        self.contracts_loaded["CoinPairPrice"] = list()
+        self.contracts_addresses['CoinPairPrice'] = list()
+        self.contracts_coin_pairs = list()
+
+        zero_address = '0x0000000000000000000000000000000000000000'
+        coin_pair_count = self.contracts_loaded["OracleManager"].coin_pair_count()
+        for i in range(coin_pair_count):
+            coin_pair = self.contracts_loaded["OracleManager"].coin_pair_at_index(i)
+            cp_address = self.contracts_loaded["OracleManager"].contract_address_of(coin_pair).lower()
+            if cp_address == zero_address:
+                # deleted coin pair
+                continue
+            try:
+                coin_pair_name = Web3.to_text(coin_pair).rstrip('\x00')
+            except Exception:
+                coin_pair_name = coin_pair.hex() if hasattr(coin_pair, 'hex') else str(coin_pair)
+            log.info("CoinPairPrice ({0}) using address: {1}".format(coin_pair_name, cp_address))
+            cp_contract = OMOCCoinPairPrice(
+                self.connection_helper.connection_manager,
+                contract_address=cp_address)
+            cp_contract.coin_pair = coin_pair_name
+            self.contracts_loaded["CoinPairPrice"].append(cp_contract)
+            self.contracts_addresses['CoinPairPrice'].append(cp_address)
+            self.contracts_coin_pairs.append(coin_pair_name)
 
     def schedule_tasks(self):
 

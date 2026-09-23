@@ -1,4 +1,4 @@
-pymongo
+pymongo<4.9  # 4.9 dropped MongoDB <4.4 support (wire version 9); some deployments still run 4.2
 web3==5.31.4
 pebble
 hexbytes==0.3.0
