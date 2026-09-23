@@ -175,8 +175,8 @@ class StableIndexerTasks(TasksManager):
         # Lending user operations collection
         self.connection_helper.create_index('lending_user_operations', [('id_event', ASCENDING)], unique=True)
         self.connection_helper.create_index(
-            'lending_user_operations', [('user', ASCENDING), ('blockNumber', DESCENDING)], unique=False)
-        self.connection_helper.create_index('lending_user_operations', [('blockNumber', DESCENDING)], unique=False)
+            'lending_user_operations', [('user', ASCENDING), ('blockNumber', DESCENDING), ('_id', DESCENDING)], unique=False)
+        self.connection_helper.create_index('lending_user_operations', [('blockNumber', DESCENDING), ('_id', DESCENDING)], unique=False)
         self.connection_helper.create_index('lending_user_operations', [('operId', ASCENDING)], unique=False)
 
         # Lending event collections: id_event / hash back the indexer's upserts,
@@ -199,10 +199,10 @@ class StableIndexerTasks(TasksManager):
         for collection_name, filter_fields in lending_filter_fields.items():
             self.connection_helper.create_index(collection_name, [('id_event', ASCENDING)], unique=False)
             self.connection_helper.create_index(collection_name, [('hash', ASCENDING)], unique=False)
-            self.connection_helper.create_index(collection_name, [('blockNumber', DESCENDING)], unique=False)
+            self.connection_helper.create_index(collection_name, [('blockNumber', DESCENDING), ('_id', DESCENDING)], unique=False)
             for field in filter_fields:
                 self.connection_helper.create_index(
-                    collection_name, [(field, ASCENDING), ('blockNumber', DESCENDING)], unique=False)
+                    collection_name, [(field, ASCENDING), ('blockNumber', DESCENDING), ('_id', DESCENDING)], unique=False)
 
     def schedule_tasks(self):
 
