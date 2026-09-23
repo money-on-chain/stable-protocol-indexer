@@ -38,6 +38,7 @@
     "MoC": "0xf773B590aF754D597770937Fa8ea7AbDf2668370",
     "Multicall2": "0x8f344c3b2a02a801c24635f594c5652c8a2eb02a",
     "IRegistry": "0xCD101a2414256DA8F8E25d7b483b3cf639a71683",
-    "TasksRunner": "0xd99a43ba443068Ea539CeB623aE24e6C9910b975"
+    "TasksRunner": "0xd99a43ba443068Ea539CeB623aE24e6C9910b975",
+    "MocLendingManager": ""
   }
 }

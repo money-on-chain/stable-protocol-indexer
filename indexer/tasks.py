@@ -1,3 +1,4 @@
+from pymongo import ASCENDING, DESCENDING
 
 import os
 import json
@@ -22,6 +23,7 @@ from .contracts import Multicall2, \
     MoCInrateRRC20, \
     MoCSettlementRRC20, \
     MoCExchangeRRC20, \
+    MocLendingManager, \
     OMOCIRegistry, \
     OMOCDelayMachine, \
     OMOCIncentiveV2, \
@@ -181,6 +183,16 @@ class StableIndexerTasks(TasksManager):
             self.connection_helper.connection_manager,
             contract_address=self.contracts_addresses['TG'])
 
+        # MocLendingManager (optional — only loaded when address is provided in config)
+        if self.config['addresses'].get('MocLendingManager'):
+            lending_address = self.config['addresses']['MocLendingManager']
+            log.info("MocLendingManager using address: {0}".format(lending_address.lower()))
+            self.contracts_loaded["MocLendingManager"] = MocLendingManager(
+                self.connection_helper.connection_manager,
+                contract_address=lending_address)
+            self.contracts_addresses['MocLendingManager'] = self.contracts_loaded[
+                "MocLendingManager"].address().lower()
+
         # OMOC (Governance / Staking / Oracles). Only loaded when an IRegistry address is configured
         if self.config['addresses'].get('IRegistry'):
             self.load_omoc_contracts()
@@ -304,12 +316,49 @@ class StableIndexerTasks(TasksManager):
             self.contracts_addresses['CoinPairPrice'].append(cp_address)
             self.contracts_coin_pairs.append(coin_pair_name)
 
+    def create_mongo_index(self):
+
+        # Lending user operations collection
+        self.connection_helper.create_index('lending_user_operations', [('id_event', ASCENDING)], unique=True)
+        self.connection_helper.create_index(
+            'lending_user_operations', [('user', ASCENDING), ('blockNumber', DESCENDING), ('_id', DESCENDING)], unique=False)
+        self.connection_helper.create_index('lending_user_operations', [('blockNumber', DESCENDING), ('_id', DESCENDING)], unique=False)
+        self.connection_helper.create_index('lending_user_operations', [('operId', ASCENDING)], unique=False)
+
+        # Lending event collections: id_event / hash back the indexer's upserts,
+        # blockNumber (alone and paired with each API filter field) backs the
+        # API listings sorted by blockNumber desc.
+        lending_filter_fields = {
+            'event_Lending_Deposit': ['user', 'recipient'],
+            'event_Lending_Withdraw': ['user', 'recipient'],
+            'event_Lending_AddACtoVault': ['user', 'recipient'],
+            'event_Lending_RemoveACfromVault': ['user', 'recipient'],
+            'event_Lending_Borrow': ['user', 'recipient'],
+            'event_Lending_Repay': ['user', 'recipient'],
+            'event_Lending_RepayWithAC': ['user'],
+            'event_Lending_Liquidate': ['user', 'liquidator'],
+            'event_Lending_TPInjection': [],
+            'event_Lending_OperationQueued': ['user', 'recipient'],
+            'event_Lending_OperationError': ['operId'],
+            'event_Lending_OperationExecuted': ['operId'],
+        }
+        for collection_name, filter_fields in lending_filter_fields.items():
+            self.connection_helper.create_index(collection_name, [('id_event', ASCENDING)], unique=False)
+            self.connection_helper.create_index(collection_name, [('hash', ASCENDING)], unique=False)
+            self.connection_helper.create_index(collection_name, [('blockNumber', DESCENDING), ('_id', DESCENDING)], unique=False)
+            for field in filter_fields:
+                self.connection_helper.create_index(
+                    collection_name, [(field, ASCENDING), ('blockNumber', DESCENDING), ('_id', DESCENDING)], unique=False)
+
     def schedule_tasks(self):
 
         log.info("Starting adding indexer tasks...")
 
         # set max workers
         self.max_workers = 1
+
+        log.info("Creating mongo collection index...")
+        self.create_mongo_index()
 
         # 1. Scan Raw Transactions
         if 'scan_raw_transactions' in self.config['tasks']:

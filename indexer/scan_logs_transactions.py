@@ -11,6 +11,18 @@ from .events import EventMoCExchangeRiskProMint, \
     EventMoCExchangeStableTokenMint, \
     EventMoCExchangeStableTokenRedeem, \
     EventMoCExchangeFreeStableTokenRedeem, \
+    EventLendingDeposit, \
+    EventLendingWithdraw, \
+    EventLendingAddACtoVault, \
+    EventLendingRemoveACfromVault, \
+    EventLendingBorrow, \
+    EventLendingRepay, \
+    EventLendingRepayWithAC, \
+    EventLendingLiquidate, \
+    EventLendingTPInjection, \
+    EventLendingOperationQueued, \
+    EventLendingOperationError, \
+    EventLendingOperationExecuted, \
     EventOMOCIncentiveV2ClaimOK, \
     EventOMOCVestingFactoryVestingCreated, \
     EventOMOCDelayMachinePaymentCancel, \
@@ -152,6 +164,11 @@ class ScanLogsTransactions:
                     contracts_log_decoder[addr].topic_map.update(extra.topic_map)
                 else:
                     contracts_log_decoder[addr] = extra
+
+        if 'MocLendingManager' in self.contracts_loaded:
+            contracts_log_decoder[self.contracts_addresses['MocLendingManager'].lower()] = LogDecoder(
+                self.contracts_loaded['MocLendingManager'].sc
+            )
 
         return contracts_log_decoder
 
@@ -445,6 +462,70 @@ class ScanLogsTransactions:
                     self.connection_helper,
                     self.filter_contracts_addresses,
                     self.block_info)
+
+        if 'MocLendingManager' in self.contracts_loaded:
+            d_event[self.contracts_addresses['MocLendingManager'].lower()] = {
+                "Deposit": EventLendingDeposit(
+                    self.options,
+                    self.connection_helper,
+                    self.filter_contracts_addresses,
+                    self.block_info),
+                "Withdraw": EventLendingWithdraw(
+                    self.options,
+                    self.connection_helper,
+                    self.filter_contracts_addresses,
+                    self.block_info),
+                "AddACtoVault": EventLendingAddACtoVault(
+                    self.options,
+                    self.connection_helper,
+                    self.filter_contracts_addresses,
+                    self.block_info),
+                "RemoveACfromVault": EventLendingRemoveACfromVault(
+                    self.options,
+                    self.connection_helper,
+                    self.filter_contracts_addresses,
+                    self.block_info),
+                "Borrow": EventLendingBorrow(
+                    self.options,
+                    self.connection_helper,
+                    self.filter_contracts_addresses,
+                    self.block_info),
+                "Repay": EventLendingRepay(
+                    self.options,
+                    self.connection_helper,
+                    self.filter_contracts_addresses,
+                    self.block_info),
+                "RepayWithAC": EventLendingRepayWithAC(
+                    self.options,
+                    self.connection_helper,
+                    self.filter_contracts_addresses,
+                    self.block_info),
+                "Liquidate": EventLendingLiquidate(
+                    self.options,
+                    self.connection_helper,
+                    self.filter_contracts_addresses,
+                    self.block_info),
+                "TPInjection": EventLendingTPInjection(
+                    self.options,
+                    self.connection_helper,
+                    self.filter_contracts_addresses,
+                    self.block_info),
+                "OperationQueued": EventLendingOperationQueued(
+                    self.options,
+                    self.connection_helper,
+                    self.filter_contracts_addresses,
+                    self.block_info),
+                "OperationError": EventLendingOperationError(
+                    self.options,
+                    self.connection_helper,
+                    self.filter_contracts_addresses,
+                    self.block_info),
+                "OperationExecuted": EventLendingOperationExecuted(
+                    self.options,
+                    self.connection_helper,
+                    self.filter_contracts_addresses,
+                    self.block_info),
+            }
 
         return d_event
 
