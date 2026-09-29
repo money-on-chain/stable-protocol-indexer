@@ -38,7 +38,7 @@ from .scan_raw_transactions import ScanRawTxs
 from .scan_logs_transactions import ScanLogsTransactions
 from .scan_transactions_status import ScanTxStatus
 
-__VERSION__ = '4.0.8'
+__VERSION__ = '4.0.9'
 
 log.info("Starting Protocol Indexer version {0}".format(__VERSION__))
 
@@ -225,6 +225,11 @@ class StableIndexerTasks(TasksManager):
             omoc['RegistryConstants']['MOC_VESTING_MACHINE']).call().lower()
         self.contracts_addresses['VotingMachine'] = self.contracts_loaded["IRegistry"].sc.functions.getAddress(
             omoc['RegistryConstants']['MOC_VOTING_MACHINE']).call().lower()
+        # Only used to filter raw txs: stake / unstake are sent to the StakingMachine,
+        # which emits nothing itself - the Supporters_* / DelayMachine_* logs they
+        # produce are only decoded if the tx lands in raw_transactions.
+        self.contracts_addresses['StakingMachine'] = self.contracts_loaded["IRegistry"].sc.functions.getAddress(
+            omoc['RegistryConstants']['MOC_STAKING_MACHINE']).call().lower()
 
         # IncentiveV2 (optional)
         if self.config['addresses'].get('IncentiveV2'):
