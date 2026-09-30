@@ -305,12 +305,27 @@ class ScanRawTxs:
         self.options = options
         self.connection_helper = connection_helper
         self.filter_contracts = filter_contracts
+        self.filter_contracts_vesting = []
 
     def on_init(self):
         pass
 
+    def on_load_vesting(self):
+        """Vesting holders stake / unstake / vote through their own vesting
+        contract, so those txs are sent to it rather than to a protocol contract.
+        Re-read on every run to pick up vestings created since the last one."""
+
+        vesting_created = self.connection_helper.mongo_collection('event_VestingFactory_VestingCreated')
+        self.filter_contracts_vesting = [
+            vesting['vesting'].lower()
+            for vesting in vesting_created.find({}, {'vesting': 1})
+            if vesting.get('vesting')
+        ]
+
     def on_task(self, task=None):
-        scan_raw_txs(self.options, self.connection_helper, self.filter_contracts, task=task)
+        self.on_load_vesting()
+        scan_raw_txs(self.options, self.connection_helper, self.filter_contracts + self.filter_contracts_vesting, task=task)
 
     def on_task_confirming(self, task=None):
-        scan_raw_txs_confirming(self.options, self.connection_helper, self.filter_contracts, task=task)
+        self.on_load_vesting()
+        scan_raw_txs_confirming(self.options, self.connection_helper, self.filter_contracts + self.filter_contracts_vesting, task=task)
