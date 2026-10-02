@@ -142,6 +142,28 @@ OMOC_INDEX_SPECS += [
     )
 ]
 
+# /omoc/voting/ rebuilds proposal records per (proposal, round) and a user's
+# history per (user, round). Both addresses are stored lowercased and queried
+# lowercased, so these need no collation.
+OMOC_INDEX_SPECS += [
+    (collection, [("proposal", 1), ("round", -1)], {})
+    for collection in (
+        "event_VotingMachine_PreVoteEvent",
+        "event_VotingMachine_VoteEvent",
+        "event_VotingMachine_PreVoteStepEvent",
+        "event_VotingMachine_VoteStepEvent",
+        "event_VotingMachine_AcceptedStepEvent",
+        "event_VotingMachine_UnregisterEvent",
+    )
+]
+OMOC_INDEX_SPECS += [
+    (collection, [("user", 1), ("round", -1)], {})
+    for collection in (
+        "event_VotingMachine_PreVoteEvent",
+        "event_VotingMachine_VoteEvent",
+    )
+]
+
 # The OracleManager feeds can be filtered by caller address.
 OMOC_INDEX_SPECS += [
     (collection, [("caller", 1), ("createdAt", -1)],
